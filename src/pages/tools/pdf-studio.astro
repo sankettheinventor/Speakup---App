@@ -281,6 +281,7 @@ const faqItems = [
 
   <!-- LISTEN — read-aloud player (offline, on-device voices) -->
   <div class="tts" id="ttsBar" hidden>
+    <div class="tts-wave" id="ttsWave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
     <div class="tts-now" id="ttsNow" role="status" aria-live="polite"></div>
     <div class="tts-row">
       <button class="tts-chip" id="ttsRate" type="button" aria-label="Reading speed">1×</button>
@@ -799,6 +800,23 @@ const faqItems = [
       border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding:11px 12px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -14px 44px -18px rgba(0,0,0,.5);animation:app-rise .26s cubic-bezier(.22,1,.36,1) both}
     .tts[hidden]{display:none}
     body.is-app .tts{bottom:calc(60px + env(safe-area-inset-bottom))}
+    /* Listen visualizer — a live equalizer that dances while speaking, rests when paused */
+    .tts-wave{display:flex;align-items:center;justify-content:center;gap:5px;height:32px;margin:2px auto 10px}
+    .tts-wave span{width:4px;height:7px;border-radius:3px;background:linear-gradient(180deg,var(--brand2,#7c5cff),var(--brand,#5b54e6));opacity:.5;transition:height .28s var(--ease-out,ease),opacity .28s ease}
+    .tts.speaking .tts-wave span{animation:tts-eq 1s ease-in-out infinite}
+    .tts.speaking .tts-wave span:nth-child(1){animation-duration:1.1s;animation-delay:-.9s}
+    .tts.speaking .tts-wave span:nth-child(2){animation-duration:.8s;animation-delay:-.35s}
+    .tts.speaking .tts-wave span:nth-child(3){animation-duration:1.25s;animation-delay:-.6s}
+    .tts.speaking .tts-wave span:nth-child(4){animation-duration:.7s;animation-delay:-.15s}
+    .tts.speaking .tts-wave span:nth-child(5){animation-duration:1.05s;animation-delay:-.5s}
+    .tts.speaking .tts-wave span:nth-child(6){animation-duration:.62s;animation-delay:0s}
+    .tts.speaking .tts-wave span:nth-child(7){animation-duration:1.15s;animation-delay:-.45s}
+    .tts.speaking .tts-wave span:nth-child(8){animation-duration:.78s;animation-delay:-.2s}
+    .tts.speaking .tts-wave span:nth-child(9){animation-duration:1.3s;animation-delay:-.7s}
+    .tts.speaking .tts-wave span:nth-child(10){animation-duration:.85s;animation-delay:-.3s}
+    .tts.speaking .tts-wave span:nth-child(11){animation-duration:1.08s;animation-delay:-.55s}
+    @keyframes tts-eq{0%,100%{height:6px;opacity:.45}50%{height:28px;opacity:1}}
+    @media(prefers-reduced-motion:reduce){.tts.speaking .tts-wave span{animation:none;height:14px;opacity:.8}}
     .tts-now{font-size:16px;line-height:1.5;font-weight:600;color:var(--txt);max-width:var(--read);margin:0 auto 11px;text-align:center;min-height:24px;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     .tts-now:empty:before{content:"Tap play to read this document aloud";color:var(--dim);font-weight:500}
     .tts-row{display:flex;align-items:center;justify-content:center;gap:10px;max-width:var(--read);margin:0 auto;width:100%}
@@ -2578,6 +2596,7 @@ const faqItems = [
         p.setAttribute('aria-label', TTS.playing ? 'Pause' : 'Play');
         var r = $('ttsRate'); if (r){ var rt = (TTS.rate % 1 === 0) ? String(TTS.rate) : TTS.rate.toFixed(2).replace(/0$/, ''); r.textContent = rt + '×'; }
         var lc = $('prListen'); if (lc) lc.classList.toggle('on', TTS.active && TTS.playing);
+        var bar = $('ttsBar'); if (bar) bar.classList.toggle('speaking', !!(TTS.active && TTS.playing));   // drive the live wave visualizer
       }
       async function ttsStart(){
         if (!ttsSupported()){ if (window.SnapJarKit) window.SnapJarKit.toast('Read-aloud isn’t available on this device', 'err'); return; }
