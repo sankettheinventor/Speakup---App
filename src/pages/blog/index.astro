@@ -1,0 +1,92 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { catSlug } from '../../lib/categories';
+
+const posts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const featured = posts[0];
+const rest = posts.slice(1);
+const cats = ['All', ...Array.from(new Set(posts.map((p) => p.data.category)))];
+
+const GRAD: Record<string, string> = {
+  'Image Tools': 'linear-gradient(135deg,#6b4dff,#ff5e7e)',
+  'Finance': 'linear-gradient(135deg,#0ea5e9,#6b4dff)',
+  'Web Design': 'linear-gradient(135deg,#15a06b,#0ea5e9)',
+  'Guides': 'linear-gradient(135deg,#f59e0b,#ff5e7e)',
+};
+const cover = (c: string) => `background:${GRAD[c] || GRAD['Guides']}`;
+const fmt = (d: Date) => d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+---
+<Base title="SnapJar Blog — Guides for Tools, Images & Calculators"
+      description="Practical how-tos and guides for SnapJar's free tools — watermarking, image conversion, favicons, calculators, colour and more.">
+  <header class="head"><div class="wrap">
+    <p class="kicker">Blog</p><h1>Guides &amp; how-tos</h1>
+    <p>Clear, practical tutorials for the tools you use — and the ideas behind them.</p>
+  </div></header>
+
+  <div class="wrap blogwrap">
+    <div class="cat-pills">
+      <a class="pill on" href="/blog">All</a>
+      {cats.filter((c) => c !== 'All').map((c) => <a class="pill" href={`/blog/category/${catSlug(c)}`}>{c}</a>)}
+    </div>
+
+    {featured && (
+      <a class="feat" href={`/blog/${featured.slug}`} data-cat={featured.data.category}>
+        <div class="feat-cover" style={cover(featured.data.category)}><span>{featured.data.emoji}</span></div>
+        <div class="feat-body">
+          <span class="tag">{featured.data.category}</span>
+          <h2>{featured.data.title}</h2>
+          <p>{featured.data.description}</p>
+          <div class="meta">{fmt(featured.data.date)} · Read more →</div>
+        </div>
+      </a>
+    )}
+
+    <div class="ad ad-lg">Advertisement</div>
+
+    <h2 class="sec">Latest articles</h2>
+    <div class="posts" id="posts">
+      {rest.map((p) => (
+        <a class="post" href={`/blog/${p.slug}`} data-cat={p.data.category}>
+          <div class="post-cover" style={cover(p.data.category)}><span>{p.data.emoji}</span></div>
+          <div class="post-body">
+            <span class="tag">{p.data.category}</span>
+            <h3>{p.data.title}</h3>
+            <p>{p.data.description}</p>
+            <div class="meta">{fmt(p.data.date)}</div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <style>
+    .blogwrap{padding-bottom:var(--s8)}
+    .cat-pills{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s5)}
+    .pill{padding:var(--s2) var(--s4);border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);
+      color:var(--dim);font:inherit;font-size:var(--t-sm);font-weight:600;cursor:pointer;transition:.12s;text-decoration:none}
+    .pill:hover{color:var(--txt);border-color:var(--brand);text-decoration:none}
+    .pill.on{color:#fff;background:linear-gradient(135deg,var(--brand2),var(--brand));border-color:transparent}
+    .feat{display:grid;grid-template-columns:1.1fr 1fr;gap:0;background:var(--surface);border:1px solid var(--line);
+      border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow);transition:transform .15s}
+    .feat:hover{transform:translateY(-3px);text-decoration:none}
+    .feat-cover,.post-cover{display:grid;place-items:center;color:#fff}
+    .feat-cover{min-height:280px}.feat-cover span{font-size:88px}
+    .feat-body{padding:var(--s6);display:flex;flex-direction:column;justify-content:center}
+    .feat-body h2{font-size:var(--t-xl);font-weight:800;letter-spacing:-.5px;margin:var(--s2) 0;color:var(--txt)}
+    .feat-body p{color:var(--dim);font-size:var(--t-md)}
+    .tag{align-self:flex-start;font-size:var(--t-xs);font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+      color:var(--brand);background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 10px}
+    .meta{color:var(--dim);font-size:var(--t-sm);margin-top:var(--s3);font-weight:600}
+    .sec{font-size:var(--t-lg);font-weight:800;margin:var(--s7) 0 var(--s4)}
+    .posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s4)}
+    .post{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;transition:transform .15s,border-color .15s}
+    .post:hover{transform:translateY(-3px);border-color:var(--brand);text-decoration:none}
+    .post-cover{height:140px}.post-cover span{font-size:52px}
+    .post-body{padding:var(--s4)}
+    .post-body h3{font-size:var(--t-md);font-weight:700;color:var(--txt);margin:var(--s2) 0}
+    .post-body p{color:var(--dim);font-size:var(--t-sm)}
+    @media(max-width:680px){.feat{grid-template-columns:1fr}.feat-cover{min-height:170px}.feat-cover span{font-size:60px}}
+  </style>
+</Base>

@@ -1,0 +1,91 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Add Page Numbers to PDF — Free, Private';
+const description = 'Free tool to add page numbers to a PDF. Choose the position and download the numbered file — in your browser, nothing uploaded.';
+const faqItems = [
+  { q: 'How do I add page numbers to a PDF?', a: 'Drop in your PDF, choose where the numbers should appear, then click Add numbers and download. Every page gets a sequential number starting at 1, and the numbered file downloads automatically.' },
+  { q: 'Where can I place the page numbers?', a: 'You can position the numbers at the bottom center, bottom right, or bottom left of each page. Pick the option that fits your document before downloading.' },
+  { q: 'Is my file uploaded or stored anywhere?', a: 'No. The PDF is processed entirely in your browser using JavaScript, so nothing is uploaded, stored, or shared. Your document never leaves your device.' },
+  { q: 'Does numbering start at 1 or can I customize it?', a: 'Numbering always starts at 1 on the first page and counts up by one for each page. There is currently no option to set a custom starting number or skip pages.' },
+  { q: 'Will adding page numbers change the rest of my PDF?', a: 'No. The tool only draws a small number at the bottom of each page and leaves all your existing text, images, and layout untouched.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the upload box or click browse to select the file from your device.' },
+  { name: 'Choose the position', text: 'Use the Position dropdown to place the numbers at the bottom center, bottom right, or bottom left of every page.' },
+  { name: 'Add numbers and download', text: 'Click "Add numbers & download" to number every page starting at 1 and save the new PDF to your device.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">PDF Tool</p><h1>Add Page Numbers to PDF</h1>
+    <p>Drop in your PDF, pick a corner, and number every page — right here in your browser.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">🔢</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <label class="ctl">Position<select id="pos"><option value="bc" selected>Bottom center</option><option value="br">Bottom right</option><option value="bl">Bottom left</option></select></label>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Add numbers &amp; download</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status"></p>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How to add page numbers</h2>
+    <p>Drop in a PDF, pick where the numbers should sit, and download the result — every page gets a clean number. Useful for reports, contracts and handouts where references to "page 7" need to actually mean something. It runs entirely in your browser; your document is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/watermark-pdf">Watermark PDF →</a><a href="/tools/rotate-pdf">Rotate PDF →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px}
+    .ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:14px;max-width:240px}
+    .ctl select{background:var(--surface2);border:1px solid var(--line);border-radius:9px;color:var(--txt);font:inherit;font-weight:600;padding:10px 11px}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim)}
+  </style>
+  <HowTo task="add page numbers to a PDF" steps={howSteps} />
+  <AppLd name="Add Page Numbers to PDF" description="Drop in a PDF, pick a position from the dropdown, and download a copy with sequential numbers drawn on every page — all in your browser." category="BusinessApplication" features={["Drag-and-drop PDF upload","Choose number position: bottom center, left or right","Automatic sequential numbering on every page","Instant download of the numbered PDF","100% in-browser, nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as PDFLib from 'pdf-lib';
+    (function(){
+      var bytes=null,srcName='document';
+      function $(i){return document.getElementById(i);}
+      async function load(f){
+        $('drop').hidden=true;$('editor').hidden=false;
+        try{
+          bytes=await f.arrayBuffer();srcName=(f.name.replace(/\.[^.]+$/,'')||'document');var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});$('info').textContent=f.name+' · '+doc.getPageCount()+' pages';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      async function go(){
+        if(!bytes)return;$('status').textContent='Adding page numbers…';var pos=$('pos').value;
+        try{
+          var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});var font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+          var np=doc.getPages().length;
+          doc.getPages().forEach(function(p,i){var w=p.getWidth();var t=String(i+1);var size=11;var tw=font.widthOfTextAtSize(t,size);
+            var x=pos==='bl'?34:pos==='br'?w-34-tw:w/2-tw/2;
+            p.drawText(t,{x:x,y:24,size:size,font:font,color:PDFLib.rgb(0.25,0.25,0.3)});});
+          var out=await doc.save();var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));a.download=srcName+'-numbered.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+          $('status').textContent='Done — numbered '+np+' page'+(np===1?'':'s')+'.';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit.guard('go',go);$('reset').onclick=function(){bytes=null;$('file').value='';$('status').textContent='';$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

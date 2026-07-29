@@ -1,0 +1,197 @@
+---
+/* SnapJar WEB home — the SEO homepage (sections + descriptions + ItemList JSON-LD).
+   Rendered only in the web build (index.astro picks it when NOT IS_APP). The app uses
+   src/app/AppHome.astro instead. Tool pages themselves are shared by both. */
+const tools = [
+  { name: 'EMI Calculator', url: '/calculators/emi' },
+  { name: 'Mortgage Calculator', url: '/calculators/mortgage' },
+  { name: 'SIP Calculator', url: '/calculators/sip' },
+  { name: 'Compound Interest Calculator', url: '/calculators/compound-interest' },
+  { name: 'FD Calculator', url: '/calculators/fd' },
+  { name: 'Loan Payoff Calculator', url: '/calculators/loan-payoff' },
+  { name: 'Income Tax Calculator', url: '/calculators/income-tax' },
+  { name: 'Retirement Calculator', url: '/calculators/retirement' },
+  { name: 'Take-Home Salary Calculator', url: '/calculators/salary' },
+  { name: 'Percentage Calculator', url: '/calculators/percentage' },
+  { name: 'BMI Calculator', url: '/calculators/bmi' },
+  { name: 'Age Calculator', url: '/calculators/age' },
+  { name: 'Tip Calculator', url: '/calculators/tip' },
+  { name: 'Discount & GST Calculator', url: '/calculators/discount' },
+  { name: 'Unit Converter', url: '/calculators/unit-converter' },
+  { name: 'Watermark Studio', url: '/tools/watermark' },
+  { name: 'Image Compressor', url: '/tools/compress' },
+  { name: 'Image Converter & Resizer', url: '/tools/convert' },
+  { name: 'Favicon Generator', url: '/tools/favicon' },
+  { name: 'QR Code Generator', url: '/tools/qr-code' },
+  { name: 'HEIC to JPG Converter', url: '/tools/heic-to-jpg' },
+  { name: 'Merge PDF', url: '/tools/pdf-tools' },
+  { name: 'SVG Optimizer', url: '/tools/svg-optimizer' },
+  { name: 'JPG to PNG Converter', url: '/tools/jpg-to-png' },
+  { name: 'PNG to JPG Converter', url: '/tools/png-to-jpg' },
+  { name: 'WebP to PNG Converter', url: '/tools/webp-to-png' },
+  { name: 'PNG to WebP Converter', url: '/tools/png-to-webp' },
+  { name: 'JPG to WebP Converter', url: '/tools/jpg-to-webp' },
+  { name: 'WebP to JPG Converter', url: '/tools/webp-to-jpg' },
+  { name: 'Color Picker from Image', url: '/tools/color-picker' },
+  { name: 'Color Palette Extractor', url: '/tools/palette-extractor' },
+  { name: 'Color Converter (HEX/RGB/HSL)', url: '/tools/color-converter' },
+  { name: 'CSS Gradient Generator', url: '/tools/gradient-generator' },
+  { name: 'Word Counter', url: '/tools/word-counter' },
+  { name: 'Character Counter', url: '/tools/character-counter' },
+  { name: 'Case Converter', url: '/tools/case-converter' },
+  { name: 'Text to PDF', url: '/tools/text-to-pdf' },
+  { name: 'JPG to PDF', url: '/tools/jpg-to-pdf' },
+  { name: 'PDF to JPG', url: '/tools/pdf-to-jpg' },
+  { name: 'Split PDF', url: '/tools/split-pdf' },
+  { name: 'Remove Pages from PDF', url: '/tools/remove-pages' },
+  { name: 'Extract Pages from PDF', url: '/tools/extract-pages' },
+  { name: 'Rotate PDF', url: '/tools/rotate-pdf' },
+  { name: 'Add Page Numbers to PDF', url: '/tools/add-page-numbers' },
+  { name: 'Watermark PDF', url: '/tools/watermark-pdf' },
+  { name: 'Organize PDF', url: '/tools/organize-pdf' },
+  { name: 'Compress PDF', url: '/tools/compress-pdf' },
+  { name: 'PDF Editor — Read & Edit', url: '/tools/pdf-studio' },
+  { name: 'Video to MP3 Converter', url: '/tools/video-to-mp3' },
+];
+const itemList = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Free Online Tools — SnapJar',
+  itemListElement: tools.map((t, i) => ({
+    '@type': 'ListItem', position: i + 1, name: t.name,
+    url: new URL(t.url, Astro.site).href,
+  })),
+};
+---
+<Fragment slot="head">
+  <script type="application/ld+json" set:html={JSON.stringify(itemList)} />
+</Fragment>
+<header class="head head-home">
+  <div class="wrap">
+    <p class="kicker">Free · Private · Instant</p>
+    <h1>Free Online Calculators, Image &amp; PDF Tools</h1>
+    <p><b>40+ tools</b> that run entirely in your browser — no signup, no upload, your data never leaves your device.</p>
+  </div>
+</header>
+
+<div class="wrap cats">
+  <section class="cat" id="calculators">
+    <h2>💰 Finance Calculators</h2>
+    <p class="csub">Plan loans, savings and investments. Pure math, instant results, nothing stored.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/calculators/emi"><div class="ti">🏦</div><h3>EMI Calculator</h3><p>EMI + prepayment, step-up &amp; year-by-year schedule.</p></a>
+      <a class="tcard" href="/calculators/mortgage"><div class="ti">🏠</div><h3>Mortgage Calculator</h3><p>Home-loan payment incl. tax &amp; insurance.</p></a>
+      <a class="tcard" href="/calculators/sip"><div class="ti">📊</div><h3>SIP Calculator</h3><p>Mutual-fund SIP returns over time.</p></a>
+      <a class="tcard" href="/calculators/compound-interest"><div class="ti">📈</div><h3>Compound Interest</h3><p>See how savings grow over time.</p></a>
+      <a class="tcard" href="/calculators/fd"><div class="ti">🏧</div><h3>FD Calculator</h3><p>Fixed-deposit maturity &amp; interest.</p></a>
+      <a class="tcard" href="/calculators/loan-payoff"><div class="ti">💳</div><h3>Loan Payoff</h3><p>Time to debt-free + extra-payment impact.</p></a>
+      <a class="tcard" href="/calculators/income-tax"><div class="ti">🧾</div><h3>Income Tax</h3><p>India new vs old regime, FY 2025-26.</p></a>
+      <a class="tcard" href="/calculators/retirement"><div class="ti">🌴</div><h3>Retirement</h3><p>Corpus estimate, inflation-adjusted.</p></a>
+      <a class="tcard" href="/calculators/salary"><div class="ti">💼</div><h3>Take-Home Salary</h3><p>Gross to net in-hand pay.</p></a>
+    </div>
+  </section>
+
+  <section class="cat" id="everyday">
+    <h2>📐 Everyday Calculators</h2>
+    <p class="csub">Quick answers for daily math.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/calculators/percentage"><div class="ti">％</div><h3>Percentage</h3><p>X% of Y, % of total, % change.</p></a>
+      <a class="tcard" href="/calculators/bmi"><div class="ti">⚖️</div><h3>BMI Calculator</h3><p>Body Mass Index, metric or imperial.</p></a>
+      <a class="tcard" href="/calculators/age"><div class="ti">🎂</div><h3>Age Calculator</h3><p>Exact age in years, months, days.</p></a>
+      <a class="tcard" href="/calculators/tip"><div class="ti">🍽️</div><h3>Tip Calculator</h3><p>Tip and split the bill.</p></a>
+      <a class="tcard" href="/calculators/discount"><div class="ti">🏷️</div><h3>Discount &amp; GST</h3><p>Final price after sale &amp; tax.</p></a>
+      <a class="tcard" href="/calculators/unit-converter"><div class="ti">📏</div><h3>Unit Converter</h3><p>Length, weight, temperature.</p></a>
+    </div>
+  </section>
+
+  <div class="ad">Advertisement</div>
+
+  <section class="cat" id="image-tools">
+    <h2>🖼️ Image Tools</h2>
+    <p class="csub">Compress, convert and watermark images — processed locally, never uploaded.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/tools/watermark"><div class="ti">💧</div><h3>Watermark Studio</h3><p>Text/logo watermark, batch, tiling.</p></a>
+      <a class="tcard" href="/tools/compress"><div class="ti">🗜️</div><h3>Image Compressor</h3><p>Shrink photos, see the size live.</p></a>
+      <a class="tcard" href="/tools/convert"><div class="ti">🔄</div><h3>Convert &amp; Resize</h3><p>JPG ↔ PNG ↔ WebP, resize.</p></a>
+      <a class="tcard" href="/tools/favicon"><div class="ti">⭐</div><h3>Favicon &amp; App Icons</h3><p>Every iOS/Android size + .ico, from image or emoji.</p></a>
+      <a class="tcard" href="/tools/heic-to-jpg"><div class="ti">📱</div><h3>HEIC → JPG</h3><p>Convert iPhone photos to JPG.</p></a>
+    </div>
+  </section>
+
+  <section class="cat" id="converters">
+    <h2>🔄 Image Converters</h2>
+    <p class="csub">Convert between formats — each its own dedicated tool.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/tools/jpg-to-png"><div class="ti">🖼️</div><h3>JPG to PNG</h3><p>Lossless, supports transparency.</p></a>
+      <a class="tcard" href="/tools/png-to-jpg"><div class="ti">🖼️</div><h3>PNG to JPG</h3><p>Smaller files for photos.</p></a>
+      <a class="tcard" href="/tools/webp-to-png"><div class="ti">🖼️</div><h3>WebP to PNG</h3><p>Open WebP anywhere.</p></a>
+      <a class="tcard" href="/tools/png-to-webp"><div class="ti">🖼️</div><h3>PNG to WebP</h3><p>Smaller web images.</p></a>
+      <a class="tcard" href="/tools/jpg-to-webp"><div class="ti">🖼️</div><h3>JPG to WebP</h3><p>Shrink photos for the web.</p></a>
+      <a class="tcard" href="/tools/webp-to-jpg"><div class="ti">🖼️</div><h3>WebP to JPG</h3><p>Universal compatibility.</p></a>
+    </div>
+  </section>
+
+  <section class="cat" id="pdf-tools">
+    <h2>📄 PDF Tools</h2>
+    <p class="csub">Read, edit, convert and combine PDFs — all in your browser.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/tools/pdf-studio"><div class="ti">📄</div><h3>PDF Editor ✦</h3><p>Read, edit, annotate &amp; organize — all in one.</p></a>
+      <a class="tcard" href="/tools/pdf-tools"><div class="ti">📑</div><h3>Merge PDF</h3><p>Combine &amp; reorder PDFs.</p></a>
+      <a class="tcard" href="/tools/compress-pdf"><div class="ti">🗜️</div><h3>Compress PDF</h3><p>Shrink PDF file size.</p></a>
+      <a class="tcard" href="/tools/organize-pdf"><div class="ti">🗂️</div><h3>Organize PDF</h3><p>Reorder, delete &amp; rotate pages.</p></a>
+      <a class="tcard" href="/tools/split-pdf"><div class="ti">✂️</div><h3>Split PDF</h3><p>Separate into single pages.</p></a>
+      <a class="tcard" href="/tools/remove-pages"><div class="ti">🗑️</div><h3>Remove Pages</h3><p>Delete pages you don't need.</p></a>
+      <a class="tcard" href="/tools/extract-pages"><div class="ti">📤</div><h3>Extract Pages</h3><p>Keep only selected pages.</p></a>
+      <a class="tcard" href="/tools/rotate-pdf"><div class="ti">🔄</div><h3>Rotate PDF</h3><p>Fix sideways pages.</p></a>
+      <a class="tcard" href="/tools/add-page-numbers"><div class="ti">🔢</div><h3>Add Page Numbers</h3><p>Number every page.</p></a>
+      <a class="tcard" href="/tools/watermark-pdf"><div class="ti">💧</div><h3>Watermark PDF</h3><p>Stamp text on every page.</p></a>
+      <a class="tcard" href="/tools/jpg-to-pdf"><div class="ti">🖼️</div><h3>JPG to PDF</h3><p>Images into one PDF, in order.</p></a>
+      <a class="tcard" href="/tools/pdf-to-jpg"><div class="ti">📄</div><h3>PDF to JPG</h3><p>Every PDF page as an image.</p></a>
+      <a class="tcard" href="/tools/text-to-pdf"><div class="ti">📝</div><h3>Text to PDF</h3><p>Paste text, download a PDF.</p></a>
+    </div>
+  </section>
+
+  <div class="ad ad-lg">Advertisement</div>
+
+  <section class="cat" id="utilities">
+    <h2>⚡ Quick Utilities</h2>
+    <p class="csub">Little tools worth bookmarking.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/tools/qr-code"><div class="ti">🔳</div><h3>QR Code Generator</h3><p>Any link or text, custom colors.</p></a>
+      <a class="tcard" href="/tools/favicon"><div class="ti">⭐</div><h3>Favicon &amp; App Icons</h3><p>Every size + .ico.</p></a>
+      <a class="tcard" href="/tools/svg-optimizer"><div class="ti">✂️</div><h3>SVG Optimizer</h3><p>Minify &amp; clean up SVG files.</p></a>
+    </div>
+  </section>
+
+  <section class="cat" id="color-tools">
+    <h2>🎨 Color Tools</h2>
+    <p class="csub">Pick, extract, convert and build colours.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/tools/color-picker"><div class="ti">🖌️</div><h3>Color Picker</h3><p>Eyedropper any colour from an image.</p></a>
+      <a class="tcard" href="/tools/palette-extractor"><div class="ti">🎨</div><h3>Palette Extractor</h3><p>Dominant colours from a photo.</p></a>
+      <a class="tcard" href="/tools/color-converter"><div class="ti">🔢</div><h3>Color Converter</h3><p>HEX ↔ RGB ↔ HSL.</p></a>
+      <a class="tcard" href="/tools/gradient-generator"><div class="ti">🌈</div><h3>Gradient Generator</h3><p>CSS gradients with live preview.</p></a>
+    </div>
+  </section>
+
+  <div class="ad">Advertisement</div>
+
+  <section class="cat" id="text-tools">
+    <h2>📝 Text &amp; Document Tools</h2>
+    <p class="csub">Count, convert and format text.</p>
+    <div class="tgrid">
+      <a class="tcard" href="/tools/word-counter"><div class="ti">🔢</div><h3>Word Counter</h3><p>Words, characters, reading time.</p></a>
+      <a class="tcard" href="/tools/character-counter"><div class="ti">📏</div><h3>Character Counter</h3><p>With X, SMS &amp; SEO limits.</p></a>
+      <a class="tcard" href="/tools/case-converter"><div class="ti">🔠</div><h3>Case Converter</h3><p>UPPER, Title, camelCase &amp; more.</p></a>
+    </div>
+  </section>
+
+  <section class="cat" id="media">
+    <h2>🎬 Audio &amp; Video</h2>
+    <p class="csub">Convert media in your browser, or grab clips from sites that allow it (separate tool).</p>
+    <div class="tgrid">
+      <a class="tcard" href="/tools/video-to-mp3"><div class="ti">🎵</div><h3>Video to MP3</h3><p>Extract audio to MP3 — 100% in your browser.</p></a>
+      <a class="tcard" href="https://elegant-crostata-510d7b.netlify.app/" target="_blank" rel="nofollow noopener"><div class="ti">⬇️</div><h3>Video Downloader ↗</h3><p>Save clips from Vimeo, TikTok, X &amp; more — opens in a new tab.</p></a>
+    </div>
+  </section>
+</div>

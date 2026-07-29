@@ -1,0 +1,74 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Text to PDF — Convert Text to a PDF File (Free, Private)';
+const description = 'Free text to PDF converter. Paste your text, pick page size and font size, and download a clean PDF — generated in your browser, nothing uploaded.';
+const faqItems = [
+  { q: 'How do I convert text to a PDF?', a: 'Type or paste your text into the box, choose A4 or Letter page size and a font size, then click Download PDF. The tool wraps long lines and adds page breaks automatically, then saves the file as document.pdf.' },
+  { q: 'Is my text uploaded or stored anywhere?', a: 'No. The PDF is generated entirely in your browser using JavaScript, so your text is never uploaded, stored, or shared. Nothing leaves your device.' },
+  { q: 'What page sizes and font sizes can I choose?', a: 'You can pick A4 or Letter for the page size, and a font size of 11, 12, 14, or 16 points. The default is A4 at 12 point.' },
+  { q: 'Does it handle long text across multiple pages?', a: 'Yes. The tool automatically wraps lines to fit the page width and starts a new page whenever the text reaches the bottom margin, so long documents flow across as many pages as needed.' },
+  { q: 'Can I use it offline or for free?', a: 'It is completely free with no sign-up. Once the page has loaded the PDF engine, conversion runs locally in your browser, so it works without sending your text to any server.' }
+];
+const howSteps = [
+  { name: 'Paste your text', text: 'Type or paste your text into the large text box.' },
+  { name: 'Choose the page size', text: 'Pick A4 or Letter from the Page size dropdown.' },
+  { name: 'Pick a font size', text: 'Select a font size of 11, 12, 14, or 16 points from the Font size dropdown.' },
+  { name: 'Download the PDF', text: 'Click Download PDF to generate and save the file as document.pdf in your browser.' }
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap">
+    <p class="kicker">Document Tool</p><h1>Text to PDF</h1>
+    <p>Paste your text, pick a page size and font, and download a clean PDF right here in your browser.</p>
+  </div></header>
+  <div class="wrap"><div class="tool">
+    <textarea id="t" rows="9" placeholder="Type or paste your text here…"></textarea>
+    <div class="row2" style="margin-top:14px">
+      <label class="ctl">Page size<select id="size"><option value="a4" selected>A4</option><option value="letter">Letter</option></select></label>
+      <label class="ctl">Font size<select id="fs"><option>11</option><option selected>12</option><option>14</option><option>16</option></select></label>
+    </div>
+    <button id="dl" class="dlbtn" type="button">⬇ Download PDF</button>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>Turn text into a PDF</h2>
+    <p>Paste any text — notes, an article, a list — choose A4 or Letter and a font size, and download a tidy, multi-page PDF with automatic line wrapping and page breaks. It's handy for sharing plain text as a proper document, printing, or attaching to an email. Everything is generated locally in your browser, so your text is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/pdf-studio?new=1">Write / Notes →</a><a href="/tools/pdf-tools">Merge PDF →</a></div>
+  </div>
+  <style>
+    textarea{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:11px;color:var(--txt);font:inherit;font-size:15px;line-height:1.6;padding:14px;outline:none;resize:vertical}
+    textarea:focus{border-color:var(--brand)}
+    .ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--dim)}
+    .ctl select{background:var(--surface2);border:1px solid var(--line);border-radius:9px;color:var(--txt);font:inherit;font-weight:600;padding:10px 11px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .dlbtn{margin-top:14px;padding:12px 20px;border-radius:10px;border:0;background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;font:inherit;font-weight:700;cursor:pointer}
+  </style>
+  <HowTo task="convert text to a PDF" steps={howSteps} />
+  <AppLd name="Text to PDF Converter" description="Paste text into the editor, choose A4 or Letter page size and a font size, then click to generate and download a multi-page PDF in your browser." category="BusinessApplication" features={["Paste or type text into a live editor", "Choose A4 or Letter page size", "Adjust font size (11–16pt)", "Automatic line wrapping and page breaks", "One-click PDF download, nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import { jsPDF } from 'jspdf';
+    (function(){
+      function $(i){return document.getElementById(i);}
+      $('dl').onclick=window.SnapJarKit.guard('dl',function(){
+        try{
+          var doc=new jsPDF({unit:'pt',format:$('size').value});
+          var fs=parseInt($('fs').value,10);doc.setFontSize(fs);
+          var pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),m=48,lh=fs*1.45;
+          if(!($('t').value||'').trim()){ if(window.SnapJarKit) window.SnapJarKit.toast('Type or paste some text first','warn'); return; }
+          var lines=doc.splitTextToSize($('t').value,pw-m*2);
+          var y=m;
+          lines.forEach(function(ln){ if(y>ph-m){doc.addPage();y=m;} doc.text(ln,m,y); y+=lh; });
+          doc.save('document.pdf');
+          // saved-to-Files toast fires automatically via the anchor-click interception (avoids a double toast)
+        }catch(err){
+          if(window.SnapJarKit) window.SnapJarKit.toast('Could not generate the PDF — try shorter or simpler text','err');
+          else alert('Could not generate the PDF — please try again with shorter or simpler text.');
+        }
+      });
+    })();
+  </script>
+</Base>

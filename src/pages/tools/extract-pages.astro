@@ -1,0 +1,91 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Extract Pages from PDF — Save Selected Pages Free';
+const description = 'Free tool to extract pages from a PDF. Enter the pages to keep (e.g. 1, 3-5) and download a new PDF with just those pages. Runs in your browser.';
+const faqItems = [
+  { q: 'How do I choose which pages to extract?', a: 'Type the pages you want to keep in the box, using single page numbers and ranges separated by commas — for example 1, 3-5. The new PDF includes only those pages, in the order you list them.' },
+  { q: 'Does it keep the page order I type?', a: 'Yes. Pages are added to the new PDF in the exact order you enter them, so you can also use the tool to reorder pages while extracting.' },
+  { q: 'Is my PDF uploaded or stored anywhere?', a: 'No. The entire process runs locally in your browser using JavaScript. Your file is never uploaded, stored, or shared — nothing leaves your device.' },
+  { q: 'Can it extract pages from a password-protected PDF?', a: 'It can open PDFs that have basic owner-level encryption, but it cannot extract pages from a file that requires a password to open. Remove the password first, then use the tool.' },
+  { q: 'Is there a file size or page limit?', a: 'There is no fixed limit set by the tool. Because everything is processed in your browser, very large PDFs depend on your device memory, but typical documents work quickly.' }
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the upload box or click browse to pick one from your device.' },
+  { name: 'List pages to keep', text: 'In the "Pages to keep" field, type the page numbers and ranges you want, such as 1, 3-5.' },
+  { name: 'Extract and download', text: 'Click "Extract & download" to save a new PDF containing only those pages in the order you listed.' }
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">PDF Tool</p><h1>Extract Pages from PDF</h1>
+    <p>Drop in your PDF, type the pages to keep, and download the trimmed file — right here in your browser.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">📄</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <label class="ctl">Pages to keep<input id="pages" type="text" placeholder="e.g. 1, 3-5" /></label>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Extract &amp; download</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status"></p>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How to extract PDF pages</h2>
+    <p>Drop in a PDF and list the pages you want to keep — single pages and ranges like <code>1, 3-5</code> both work. You'll get a new PDF containing only those pages, in the order you listed them. Perfect for pulling a chapter or a few pages out of a big document. It all runs in your browser; nothing is uploaded.</p>
+    <div class="xlinks"><a href="/tools/remove-pages">Remove Pages →</a><a href="/tools/split-pdf">Split PDF →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px}
+    .ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:14px;max-width:280px}
+    .ctl input{background:var(--surface2);border:1px solid var(--line);border-radius:9px;color:var(--txt);font:inherit;font-weight:600;padding:10px 11px;outline:none}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim)}
+    code{background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.9em}
+  </style>
+  <HowTo task="extract pages from a PDF" steps={howSteps} />
+  <AppLd name="Extract Pages from PDF" description="Drop in a PDF, type the page numbers and ranges to keep, then download a brand-new PDF with only those pages — all in your browser." category="BusinessApplication" features={["Drag-and-drop or browse to load a PDF", "Pick pages with single numbers and ranges like 1, 3-5", "Reorder pages by the order you type them", "Download the extracted PDF instantly", "100% client-side — nothing is uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as PDFLib from 'pdf-lib';
+    (function(){
+      var bytes=null,count=0,srcName='document';
+      function $(i){return document.getElementById(i);}
+      function parse(str,max){var out=[];(str||'').split(',').forEach(function(p){p=p.trim();if(!p)return;if(p.indexOf('-')>=0){var r=p.split('-'),a=parseInt(r[0],10),b=parseInt(r[1],10);if(isNaN(a)||isNaN(b))return;if(a>b){var t=a;a=b;b=t;}for(var i=a;i<=b;i++)if(i>=1&&i<=max)out.push(i);}else{var n=parseInt(p,10);if(n>=1&&n<=max)out.push(n);}});return out;}
+      async function load(f){
+        $('drop').hidden=true;$('editor').hidden=false;
+        try{
+          bytes=await f.arrayBuffer();srcName=(f.name.replace(/\.[^.]+$/,'')||'document');var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});count=doc.getPageCount();$('info').textContent=f.name+' · '+count+' pages';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      async function go(){
+        if(!bytes)return;var keep=parse($('pages').value,count);if(!keep.length){$('status').textContent='Enter pages to keep.';return;}
+        $('status').textContent='Working…';
+        try{
+          var src=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true}),doc=await PDFLib.PDFDocument.create();
+          var pages=await doc.copyPages(src,keep.map(function(n){return n-1;}));pages.forEach(function(p){doc.addPage(p);});
+          var out=await doc.save();var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));a.download=srcName+'-extracted.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+          $('status').textContent='Done — '+keep.length+' page(s).';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit.guard('go',go);$('reset').onclick=function(){bytes=null;$('file').value='';$('pages').value='';$('status').textContent='';$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

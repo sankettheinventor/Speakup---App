@@ -1,0 +1,103 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Add Watermark to PDF — Free, Private (In Browser)';
+const description = 'Free tool to add a text watermark to every page of a PDF — choose the text, opacity and angle, then download. Runs in your browser, nothing uploaded.';
+const faqItems = [
+  { q: 'How do I add a text watermark to a PDF?', a: 'Drop in your PDF, type the watermark text (such as DRAFT or CONFIDENTIAL), adjust the opacity and angle, then click Watermark & download. The text is stamped diagonally across every page of the file.' },
+  { q: 'Can I change the watermark opacity and angle?', a: 'Yes. Use the Opacity slider (5% to 60%) to control how faint or bold the watermark looks, and the Angle slider (0° to 90°) to set the rotation. The default is 15% opacity at a 45° angle.' },
+  { q: 'Does the watermark appear on every page?', a: 'Yes. The same text watermark is applied to all pages in the PDF automatically, scaled to fit each page size.' },
+  { q: 'Is my PDF uploaded or stored anywhere?', a: 'No. The entire process runs locally in your browser using JavaScript, so your PDF is never uploaded, stored, or shared. Nothing leaves your device.' },
+  { q: 'Can I add an image or logo as a watermark?', a: 'No. This tool adds a text watermark only — you choose the words, opacity, and angle. It does not support image or logo watermarks.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the page or click browse to select the file from your device.' },
+  { name: 'Type the watermark text', text: 'Enter your watermark text, such as DRAFT or CONFIDENTIAL, in the Watermark text field.' },
+  { name: 'Adjust opacity and angle', text: 'Use the Opacity slider (5% to 60%) and Angle slider (0° to 90°) to set how the watermark looks.' },
+  { name: 'Watermark and download', text: 'Click Watermark & download to stamp the text across every page and save the result.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">PDF Tool</p><h1>Add Watermark to PDF</h1>
+    <p>Drop in your PDF, type your text, and drag the sliders to stamp it across every page — right here.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">💧</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <label class="ctl">Watermark text<input id="text" type="text" value="CONFIDENTIAL" /></label>
+      <div class="row2">
+        <label class="ctl">Opacity <span class="cv" id="opV">15%</span><input id="op" type="range" min="5" max="60" step="5" value="15" /></label>
+        <label class="ctl">Angle <span class="cv" id="agV">45°</span><input id="ag" type="range" min="0" max="90" step="5" value="45" /></label>
+      </div>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Watermark &amp; download</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status"></p>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How to watermark a PDF</h2>
+    <p>Drop in a PDF, type your watermark (like "DRAFT" or "CONFIDENTIAL"), set the opacity and angle, and download — the text is stamped diagonally across every page. Great for marking drafts, proofs or sensitive documents. It runs entirely in your browser, so the file is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/add-page-numbers">Add Page Numbers →</a><a href="/tools/pdf-tools">Merge PDF →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px}
+    .ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:14px}
+    .ctl input{background:var(--surface2);border:1px solid var(--line);border-radius:9px;color:var(--txt);font:inherit;font-weight:600;padding:10px 11px;outline:none}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:420px}.cv{float:right;color:var(--brand);font-weight:700}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim)}
+  </style>
+  <HowTo task="add a watermark to a PDF" steps={howSteps} />
+  <AppLd name="PDF Watermark Tool" description="Drop in a PDF, type your watermark text, then drag the opacity and angle sliders to stamp it diagonally across every page and download — all in your browser." category="BusinessApplication" features={["Drag-and-drop PDF upload", "Custom watermark text", "Opacity slider (5% to 60%)", "Angle slider (0° to 90°)", "Stamps every page and downloads instantly"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as PDFLib from 'pdf-lib';
+    (function(){
+      var bytes=null,srcName='document';
+      function $(i){return document.getElementById(i);}
+      async function load(f){
+        $('drop').hidden=true;$('editor').hidden=false;
+        try{
+          bytes=await f.arrayBuffer();srcName=(f.name.replace(/\.[^.]+$/,'')||'document');var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});$('info').textContent=f.name+' · '+doc.getPageCount()+' pages';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      async function go(){
+        if(!bytes)return;$('status').textContent='Applying watermark…';
+        var text=$('text').value||'WATERMARK',op=parseInt($('op').value,10)/100,ag=parseInt($('ag').value,10);
+        try{
+          var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});var font=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+          var np=doc.getPages().length;
+          doc.getPages().forEach(function(p){var w=p.getWidth(),h=p.getHeight();var size=Math.min(w,h)*0.10;var tw=font.widthOfTextAtSize(text,size);
+            while(tw>w*0.9 && size>6){ size-=1; tw=font.widthOfTextAtSize(text,size); }
+            // center the ROTATED text box on the page: offset the draw origin (baseline-left) by
+            // the text-box half-extents rotated by ag, so the box centre lands at (w/2,h/2) for ANY angle.
+            var rad=ag*Math.PI/180, ht=size*0.72;
+            var ox=(tw/2)*Math.cos(rad)-(ht/2)*Math.sin(rad), oy=(tw/2)*Math.sin(rad)+(ht/2)*Math.cos(rad);
+            p.drawText(text,{x:w/2-ox,y:h/2-oy,size:size,font:font,color:PDFLib.rgb(0.5,0.5,0.55),opacity:op,rotate:PDFLib.degrees(ag)});});
+          var out=await doc.save();var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));a.download=srcName+'-watermarked.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+          $('status').textContent='Done — watermarked '+np+' page'+(np===1?'':'s')+'.';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      ['op','ag'].forEach(function(id){$(id).addEventListener('input',function(){$('opV').textContent=$('op').value+'%';$('agV').textContent=$('ag').value+'°';});});
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit.guard('go',go);$('reset').onclick=function(){bytes=null;$('file').value='';$('status').textContent='';$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

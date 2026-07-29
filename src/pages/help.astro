@@ -1,0 +1,97 @@
+---
+import Base from '../layouts/Base.astro';
+const title = 'Help & FAQ — SnapJar';
+const description = 'Answers to common questions about SnapJar.';
+const faqs = [
+  { q: 'Is SnapJar really free?', a: 'Yes — completely. There is no sign-up and no payment, ever. SnapJar stays free thanks to clearly-labeled ads, which never see your documents.' },
+  { q: 'Do my files leave my phone?', a: 'No. Every tool runs on your device. Your files, scans and PDFs are never uploaded to any server — there isn\'t one. Your Recent files, Highlights and notes are stored only on your phone.' },
+  { q: 'How do I scan a document?', a: 'Tap the Scan button in the center of the bottom bar, choose what you\'re scanning, and point your camera. SnapJar auto-crops it and saves a clean PDF — all on your device.' },
+  { q: 'How do I edit a PDF?', a: 'Open a PDF, then tap the pencil (Edit) button. SnapJar pulls the text into an editor so you can change it freely, then save it as a new PDF. Your original stays untouched.' },
+  { q: 'How do highlights work?', a: 'While reading a PDF, select any text and tap "Highlight". Pick a color, name it if you like, and save. Find all your highlights under My Files → Highlights, grouped by document — tap any one to jump back to it.' },
+  { q: 'How do I use read-aloud?', a: 'Open a PDF and tap the headphones button. To hear a specific passage, select the text first, then tap play. You can pick a reader voice and speed too.' },
+  { q: 'Does it keep reading when I leave the app?', a: 'Yes. If you switch apps, press Back, or turn off the screen while listening, SnapJar keeps reading the book and shows a playback notification with the title, progress and Pause/Stop — just like a music player. Reading stops only when you stop it. Note that scanned (image-only) PDFs are read on-screen only.' },
+  { q: 'Why does SnapJar need camera or internet permission?', a: 'Camera is used only when you choose to scan. Internet is used only for ads and optional voice downloads. Neither is used to track you.' },
+  { q: 'Where are my saved files?', a: 'Tap Recent in the bottom bar to open My Files — your saved PDFs, folders, and highlights live there, on your device.' },
+  { q: 'How do I suggest a feature?', a: 'We\'d love to hear it! Go to Settings → Suggest a feature, or email contact.snapjar@gmail.com.' },
+];
+---
+<Base title={title} description={description}>
+  <main>
+    <div class="wrap help-page">
+      <h1 class="help-h1">Help &amp; FAQ</h1>
+      <p class="help-intro">Quick answers to the questions we hear most. Still stuck? <a href="mailto:contact.snapjar@gmail.com?subject=SnapJar%20help">Email us</a>.</p>
+      <div class="help-list">
+        {faqs.map((f) => (
+          <details class="help-item">
+            <summary class="help-q"><span>{f.q}</span><span class="help-plus"></span></summary>
+            <div class="help-a">{f.a}</div>
+          </details>
+        ))}
+      </div>
+
+      <!-- Diagnostics: the crash log lives ONLY on this device. The user decides whether to
+           send it, and sees exactly what it contains first. Hidden when there's nothing to report. -->
+      <div class="help-diag" id="helpDiag" hidden>
+        <div class="help-diag-h">Something went wrong recently</div>
+        <p class="help-diag-p">SnapJar kept a short technical note about <span id="helpDiagN">0</span> recent problem(s) — on this device only, never sent anywhere. Sharing it helps us fix the issue faster.</p>
+        <div class="help-diag-row">
+          <button class="help-diag-btn" id="helpDiagSend" type="button">Email the report</button>
+          <button class="help-diag-btn help-diag-ghost" id="helpDiagView" type="button">View</button>
+          <button class="help-diag-btn help-diag-ghost" id="helpDiagClear" type="button">Clear</button>
+        </div>
+        <pre class="help-diag-pre" id="helpDiagPre" hidden></pre>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var K = window.SnapJarKit; if (!K || !K.errorReport) return;
+      var box = document.getElementById('helpDiag'), rep = K.errorReport();
+      if (!rep) return;                                   // nothing has gone wrong — stay invisible
+      var log = K.errorLog ? K.errorLog() : [];
+      document.getElementById('helpDiagN').textContent = String(log.length);
+      box.hidden = false;
+      document.getElementById('helpDiagView').addEventListener('click', function () {
+        var pre = document.getElementById('helpDiagPre');
+        pre.textContent = rep; pre.hidden = !pre.hidden;
+      });
+      document.getElementById('helpDiagClear').addEventListener('click', function () {
+        K.clearErrorLog(); box.hidden = true;
+        if (K.toast) K.toast('Diagnostics cleared', 'ok');
+      });
+      document.getElementById('helpDiagSend').addEventListener('click', function () {
+        var body = 'Hi SnapJar team,\n\nSomething went wrong. Here is the technical note from my device:\n\n' + rep + '\n\nWhat I was doing:\n';
+        var href = 'mailto:contact.snapjar@gmail.com?subject=' + encodeURIComponent('SnapJar diagnostics') + '&body=' + encodeURIComponent(body);
+        try { window.open(href, '_system'); } catch (e) { location.href = href; }
+      });
+    })();
+  </script>
+
+  <style is:global>
+    .help-page{ max-width:720px; margin:0 auto; padding-top:var(--s4); padding-bottom:var(--s7); }
+    .help-h1{ font-size:clamp(28px,8vw,36px); font-weight:800; letter-spacing:-.03em; color:var(--app-ink,var(--txt)); }
+    .help-intro{ margin-top:10px; font-size:14px; line-height:1.6; color:var(--app-dim,var(--dim)); }
+    .help-intro a{ color:var(--app-accent,var(--brand)); font-weight:700; text-decoration:none; }
+    .help-list{ display:flex; flex-direction:column; gap:10px; margin-top:var(--s5); }
+    .help-item{ background:var(--app-tile,var(--surface)); border-radius:16px; box-shadow:var(--app-shadow); overflow:hidden; }
+    .help-q{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 16px; cursor:pointer; list-style:none; font-size:15px; font-weight:700; letter-spacing:-.01em; color:var(--app-ink,var(--txt)); }
+    .help-q::-webkit-details-marker{ display:none; }
+    .help-plus{ position:relative; width:18px; height:18px; flex:0 0 auto; }
+    .help-plus::before,.help-plus::after{ content:""; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--app-dim,var(--dim)); border-radius:2px; transition:transform .2s var(--ease-out,ease); }
+    .help-plus::before{ width:14px; height:2px; }
+    .help-plus::after{ width:2px; height:14px; }
+    .help-item[open] .help-plus::after{ transform:translate(-50%,-50%) scaleY(0); }
+    .help-a{ padding:0 16px 16px; font-size:14px; line-height:1.7; color:var(--app-dim,var(--dim)); }
+    .help-diag{ margin-top:var(--s6); padding:16px; border-radius:16px; background:var(--app-tile,var(--surface)); box-shadow:var(--app-shadow); border-left:4px solid var(--app-accent,var(--brand)); }
+    .help-diag-h{ font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--app-ink,var(--txt)); }
+    .help-diag-p{ margin-top:6px; font-size:13.5px; line-height:1.65; color:var(--app-dim,var(--dim)); }
+    .help-diag-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .help-diag-btn{ min-height:44px; padding:0 16px; border:0; border-radius:12px; font:inherit; font-weight:700; font-size:13.5px; cursor:pointer;
+      background:linear-gradient(135deg,var(--app-accent-2,#a78bfa),var(--app-accent,#6b4dff)); color:#fff; }
+    .help-diag-ghost{ background:color-mix(in srgb,var(--app-ink,#16121f) 7%,transparent); color:var(--app-ink,var(--txt)); }
+    .help-diag-btn:active{ transform:scale(.97); }
+    .help-diag-pre{ margin-top:12px; padding:12px; border-radius:10px; background:color-mix(in srgb,var(--app-ink,#16121f) 6%,transparent);
+      font-size:11.5px; line-height:1.55; color:var(--app-dim,var(--dim)); white-space:pre-wrap; word-break:break-word; max-height:240px; overflow:auto; }
+  </style>
+</Base>

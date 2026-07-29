@@ -1,0 +1,11 @@
+{
+  "appId": "com.snapjar.app",
+  "appName": "SnapJar",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

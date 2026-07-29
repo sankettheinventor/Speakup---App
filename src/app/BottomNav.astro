@@ -1,0 +1,264 @@
+---
+/* SnapJar app bottom navigation. Rendered only in the app build (Base.astro gates it
+   behind IS_APP), so this app-only markup never ships to the website. The center
+   "Scan" button is the flagship (file 16): it drives the native ML Kit document
+   scanner → PDF → Share/Save, reached via window.Capacitor.registerPlugin so no
+   Capacitor import leaks into the web bundle. */
+---
+<nav class="appbar" aria-label="App navigation">
+  <a class="appbar-i" data-nav="home" href="/">
+    <span class="abi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.06l-8.69-8.69a2.25 2.25 0 0 0-3.18 0l-8.69 8.69a.75.75 0 1 0 1.06 1.06l8.69-8.69Z"/><path d="m12 5.43 8.16 8.16c.03.03.06.06.09.09v6.2c0 1.03-.84 1.87-1.88 1.87H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75v4.5a.75.75 0 0 1-.75.75H5.63a1.88 1.88 0 0 1-1.88-1.88v-6.19l.09-.09L12 5.43Z"/></svg></span><span class="abl">Home</span>
+  </a>
+  <a class="appbar-i" data-nav="pdf" href="/tools/pdf-studio">
+    <span class="abi"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.5L13.5 2H6Zm7.25 1.75V8c0 .41.34.75.75.75h4.25L13.25 3.75ZM7.75 13a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm0 3.5a.75.75 0 0 0 0 1.5h5.5a.75.75 0 0 0 0-1.5h-5.5Z" clip-rule="evenodd"/></svg></span><span class="abl">PDF</span>
+  </a>
+  <div class="appbar-c">
+    <button id="navScan" type="button" aria-label="Scan a document">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M4 12h16"/></svg>
+    </button>
+    <span class="abl">Scan</span>
+  </div>
+  <a class="appbar-i" data-nav="recent" href="/recent">
+    <span class="abi"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25c-5.39 0-9.75 4.36-9.75 9.75s4.36 9.75 9.75 9.75 9.75-4.36 9.75-9.75S17.39 2.25 12 2.25Zm.75 3.75a.75.75 0 0 0-1.5 0v6c0 .41.34.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clip-rule="evenodd"/></svg></span><span class="abl">Recent</span>
+  </a>
+  <button class="appbar-i" data-nav="listen" id="navListen" type="button">
+    <span class="abi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.9 2 3 6.03 3 11v6a3 3 0 0 0 3 3h1.5A1.5 1.5 0 0 0 9 18.5v-5A1.5 1.5 0 0 0 7.5 12H5.12C5.6 8.02 8.42 5 12 5s6.4 3.02 6.88 7H16.5a1.5 1.5 0 0 0-1.5 1.5v5a1.5 1.5 0 0 0 1.5 1.5H18a3 3 0 0 0 3-3v-6c0-4.97-3.9-9-9-9Z"/></svg></span><span class="abl">Listen</span>
+  </button>
+</nav>
+
+<!-- "Listen to anything" sheet — the same design language as the Scan sheet, because it is the
+     other flagship entry point: every route into hands-free listening lives here. -->
+<!-- LISTEN sheet — deliberately the SAME construction as the Scan sheet (.scan-* classes,
+     elevated gradient tiles), because the two are sibling flagship entry points and should
+     feel identical. Labels are short so nothing truncates in a 3-across grid. -->
+<div class="scan-sheet" id="listenSheet" hidden>
+  <div class="scan-card" role="dialog" aria-modal="true" aria-label="Listen">
+    <div class="scan-grab"></div>
+    <div class="scan-title" id="listenTitle">Listen instead of reading</div>
+    <div class="scan-sub" id="listenSub">Read aloud on your device — even with the screen off</div>
+
+    <button class="lsn-cont" id="listenCont" type="button" hidden>
+      <span class="lsn-cont-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.87l10-6.5a1 1 0 0 0 0-1.74l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg></span>
+      <span class="lsn-cont-tx">
+        <small class="lsn-cont-eyebrow">Continue</small>
+        <b id="listenContName">Keep listening</b>
+        <span class="lsn-bar"><i id="listenContBar"></i></span>
+        <small id="listenContSub">Resume where you stopped</small>
+      </span>
+    </button>
+
+    <div class="scan-grid">
+      <button class="scan-opt" data-listen="document" type="button"><span class="so-ic" style="--g1:#3b82f6;--g2:#60a5fa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7l-5-5Zm-.5 1.9L17.6 8H14a.5.5 0 0 1-.5-.5V3.9ZM8.5 12.5h7a.75.75 0 0 1 0 1.5h-7a.75.75 0 0 1 0-1.5Zm0 3.5h4.5a.75.75 0 0 1 0 1.5H8.5a.75.75 0 0 1 0-1.5Z"/></svg></span><span class="so-l">Document</span></button>
+      <button class="scan-opt" data-listen="scan" type="button"><span class="so-ic" style="--g1:#10b981;--g2:#34d399"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h3.5a1 1 0 0 1 0 2H5.5A.5.5 0 0 0 5 5.5v2a1 1 0 0 1-2 0V4a1 1 0 0 1 1-1Zm12.5 0H20a1 1 0 0 1 1 1v3.5a1 1 0 0 1-2 0v-2a.5.5 0 0 0-.5-.5h-2a1 1 0 0 1 0-2ZM4 15.5a1 1 0 0 1 1 1v2c0 .28.22.5.5.5h2a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1v-3.5a1 1 0 0 1 1-1Zm16 0a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1h-3.5a1 1 0 0 1 0-2h2a.5.5 0 0 0 .5-.5v-2a1 1 0 0 1 1-1ZM8 8.5h8a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5Zm0 3h8a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5Zm0 3h5a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5Z"/></svg></span><span class="so-l">Paper</span></button>
+      <button class="scan-opt" data-listen="photo" type="button"><span class="so-ic" style="--g1:#8b5cf6;--g2:#a78bfa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 4h15A2.5 2.5 0 0 1 22 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-11A2.5 2.5 0 0 1 4.5 4Zm4 3.2a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM4 16.7V17.5c0 .28.22.5.5.5h15a.5.5 0 0 0 .5-.5v-2.6l-3.2-3.2a1.4 1.4 0 0 0-2 0L4 16.7Z"/></svg></span><span class="so-l">Photo</span></button>
+      <button class="scan-opt" data-listen="link" type="button"><span class="so-ic" style="--g1:#f59e0b;--g2:#fbbf24"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.5 14.5a1 1 0 0 1 0-1.4l3.6-3.6a1 1 0 0 1 1.4 1.4l-3.6 3.6a1 1 0 0 1-1.4 0Zm-2.6 5.9a4.6 4.6 0 0 1 0-6.5l1.9-1.9a1 1 0 1 1 1.4 1.4l-1.9 1.9a2.6 2.6 0 0 0 3.7 3.7l1.9-1.9a1 1 0 0 1 1.4 1.4l-1.9 1.9a4.6 4.6 0 0 1-6.5 0Zm5.4-12.9 1.9-1.9a4.6 4.6 0 1 1 6.5 6.5l-1.9 1.9a1 1 0 0 1-1.4-1.4l1.9-1.9a2.6 2.6 0 0 0-3.7-3.7l-1.9 1.9a1 1 0 1 1-1.4-1.4Z"/></svg></span><span class="so-l">Link</span></button>
+      <button class="scan-opt" data-listen="files" id="listenFiles" type="button" hidden><span class="so-ic" style="--g1:#ff5e7e;--g2:#ff8aa3"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h3.1a2 2 0 0 1 1.5.7L11.4 6h7.1A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-11Z"/></svg></span><span class="so-l">My files</span></button>
+    </div>
+    <div class="lsn-tip">Anywhere else, tap <b>Share → SnapJar</b>.</div>
+    <button class="scan-cancel" id="listenCancel" type="button">Close</button>
+  </div>
+</div>
+
+<!-- Premium "Scan anything" sheet (opens from the center Scan button) -->
+<div class="scan-sheet" id="scanSheet" hidden>
+  <div class="scan-card" role="dialog" aria-modal="true" aria-label="Scan anything">
+    <div class="scan-grab"></div>
+    <div class="scan-title">Scan anything</div>
+    <div class="scan-sub">Crisp, auto-cropped, 100% on your device</div>
+    <div class="scan-grid">
+      <button class="scan-opt" data-scan="document" type="button"><span class="so-ic" style="--g1:#7c5cff;--g2:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 15.5h4"/></svg></span><span class="so-l">Document</span></button>
+      <button class="scan-opt" data-scan="id" type="button"><span class="so-ic" style="--g1:#3b82f6;--g2:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12.5" rx="2"/><circle cx="8.2" cy="11.3" r="1.9"/><path d="M13 10h5M13 13h5M5.6 15.4c.5-1.2 4.7-1.2 5.2 0"/></svg></span><span class="so-l">ID card</span></button>
+      <button class="scan-opt" data-scan="book" type="button"><span class="so-ic" style="--g1:#f59e0b;--g2:#fbbf24"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.2C10.4 5 7.9 4.4 5.3 4.4c-.7 0-1.3.6-1.3 1.3v11c0 .7.6 1.2 1.3 1.2 2.6 0 5.1.6 6.7 1.9"/><path d="M12 6.2c1.6-1.2 4.1-1.8 6.7-1.8.7 0 1.3.6 1.3 1.3v11c0 .7-.6 1.2-1.3 1.2-2.6 0-5.1.6-6.7 1.9"/><path d="M12 6.2v13.5"/></svg></span><span class="so-l">Book</span></button>
+      <button class="scan-opt" data-scan="signature" type="button"><span class="so-ic" style="--g1:#ff5e7e;--g2:#ff8aa3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 19.5c4 .5 6-.5 6-2.2 0-1.2-1.8-1.4-2 0-.2 1.4 1.2 2.4 3 2.4 2.2 0 3.5-1.6 5-4"/><path d="M14.5 7.6l2.4 2.4"/><path d="M12.5 16.5 18.7 10.3a1.7 1.7 0 0 0 0-2.4l-.6-.6a1.7 1.7 0 0 0-2.4 0L9.5 13.5l-.6 3.6 3.6-.6Z"/></svg></span><span class="so-l">Signature</span></button>
+      <button class="scan-opt" data-scan="photo" type="button"><span class="so-ic" style="--g1:#10b981;--g2:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2.2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m20.5 16-4.7-4.7a1.5 1.5 0 0 0-2.1 0L5 19.5"/></svg></span><span class="so-l">Photo</span></button>
+      <button class="scan-opt" data-scan="qr" type="button"><span class="so-ic" style="--g1:#6366f1;--g2:#818cf8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5V6a2 2 0 0 1 2-2h2.5M15.5 4H18a2 2 0 0 1 2 2v2.5M20 15.5V18a2 2 0 0 1-2 2h-2.5M8.5 20H6a2 2 0 0 1-2-2v-2.5"/><path d="M12 8v8M8 12h8" stroke-width="1.6"/></svg></span><span class="so-l">QR scanner</span></button>
+      <button class="scan-opt" data-scan="text" type="button"><span class="so-ic" style="--g1:#8b5cf6;--g2:#a78bfa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5V6a2 2 0 0 1 2-2h2.5M15.5 4H18a2 2 0 0 1 2 2v2.5M20 15.5V18a2 2 0 0 1-2 2h-2.5M8.5 20H6a2 2 0 0 1-2-2v-2.5"/><path d="M8.5 10h7M8.5 13h7M8.5 16h4"/></svg></span><span class="so-l">Scan text</span></button>
+    </div>
+    <button class="scan-cancel" id="scanCancel" type="button">Cancel</button>
+  </div>
+</div>
+
+<!-- Leaving message: ask for a rating when the user tries to exit the app -->
+<div class="app-modal" id="appRate" hidden>
+  <div class="app-modal-card" role="dialog" aria-modal="true" aria-label="Rate SnapJar">
+    <div class="amc-ic">⭐</div>
+    <h3>Enjoying SnapJar?</h3>
+    <p>Made by a tiny team and kept private and free. A quick rating helps more people find it.</p>
+    <button class="amc-close" id="appRateGo" type="button">Rate the app ⭐</button>
+    <button class="amc-later" id="appRateExit" type="button">Not now</button>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    /* highlight the active tab from the current path */
+    var p = (location.pathname.replace(/\/$/, '').replace(/\.html$/, '') || '/');
+    var cat = p === '/' ? 'home'
+      : p === '/recent' ? 'recent'
+      : p.indexOf('/tools/pdf-studio') === 0 ? 'pdf'
+      : p.indexOf('/tools/scanner') === 0 ? 'scan'
+      : /(pdf-tools|compress-pdf|split-pdf|organize-pdf|rotate-pdf|add-page-numbers|watermark-pdf|extract-pages|remove-pages|jpg-to-pdf|pdf-to-jpg|text-to-pdf|word-to-pdf|pdf-to-word)/.test(p) ? 'pdf'
+      : /(text-scan)/.test(p) ? 'listen'
+      : '';   // image tools, calculators, QR, text tools, scanner → no false highlight
+              // (the Image tab became Listen; image tools are still reachable from Home)
+    var on = cat ? document.querySelector('.appbar-i[data-nav="' + cat + '"]') : null;
+    if (on) on.classList.add('on');
+
+    /* Center "Scan" → premium SnapJar scan sheet → route each mode. */
+    var scanBtn = document.getElementById('navScan');
+    var Cap = window.Capacitor;
+    var Plug = function (n) { return window.SnapJarKit ? window.SnapJarKit.plugin(n) : null; };
+    var DocumentScanner = Plug('DocumentScanner');
+    var sheet = document.getElementById('scanSheet');
+    function toast(m, t){ if (window.SnapJarKit && window.SnapJarKit.toast) window.SnapJarKit.toast(m, t || 'info'); }
+    function adPause(){ if (window.SnapJarKit && window.SnapJarKit.adPause) window.SnapJarKit.adPause(); }
+    function adResume(){ if (window.SnapJarKit && window.SnapJarKit.adResume) window.SnapJarKit.adResume(); }
+    function haptic(s){ if (window.SnapJarKit && window.SnapJarKit.haptic) window.SnapJarKit.haptic(s); }
+    function openScan(){ if (sheet) sheet.hidden = false; adPause(); haptic('light'); }
+    function closeScan(){ if (sheet) sheet.hidden = true; adResume(); }
+    if (scanBtn) scanBtn.addEventListener('click', openScan);
+    var scanCancel = document.getElementById('scanCancel'); if (scanCancel) scanCancel.addEventListener('click', closeScan);
+    if (sheet) sheet.addEventListener('click', function (e){ if (e.target === sheet) closeScan(); });
+
+    /* Each scan type → our own premium scanner (camera → auto edge-detect →
+       draggable-corner crop + magnifier → perspective warp → scan filters → PDF),
+       fully on-device. QR + Scan text keep their dedicated flows. */
+    if (sheet) sheet.addEventListener('click', function (e){
+      var b = e.target && e.target.closest && e.target.closest('.scan-opt'); if (!b) return;
+      var mode = b.getAttribute('data-scan');
+      haptic('light'); closeScan();
+      if (mode === 'qr') { location.href = '/tools/qr-scan.html'; return; }            // native QR/barcode scanner
+      if (mode === 'text') { location.href = '/tools/text-scan.html'; return; }            // dedicated Scan-to-text (OCR) flow
+      /* Document / ID card / Book / Signature / Photo → native document scanner. */
+      location.href = '/tools/scanner.html?mode=' + mode;
+    });
+
+    /* ===== LISTEN hub =====
+       Every way into hands-free listening, in one place: resume what you were on, open a
+       document, scan paper, pull an article off a link, or reach your saved files. */
+    var lSheet = document.getElementById('listenSheet');
+    var lBtn = document.getElementById('navListen');
+    var prevBack = null;
+    /* Every state gets a considered screen — no dead options, no apologies:
+         mid-book   → a resume card naming the book and its progress
+         returning  → the actions, plus their saved library
+         brand new  → only what a first-time user can actually do, and copy that says so    */
+    function paintListen(){
+      var bk = lastBook(), card = document.getElementById('listenCont');
+      if (bk && card){
+        var nm = String(bk.name || 'your document').replace(/\.[^.]+$/, '');
+        if (nm.length > 34) nm = nm.slice(0, 33) + '…';
+        document.getElementById('listenContName').textContent = nm;
+        document.getElementById('listenContSub').textContent =
+          (bk.pct > 0 ? bk.pct + '% through' : 'Just started') + (bk.page > 1 ? ' · page ' + bk.page : '');
+        document.getElementById('listenContBar').style.width = Math.max(3, Math.min(100, bk.pct || 0)) + '%';
+        card.hidden = false;
+      } else if (card) card.hidden = true;
+
+      /* Only offer the library once there IS one. */
+      var filesBtn = document.getElementById('listenFiles');
+      if (filesBtn && window.SJRecents && window.SJRecents.list){
+        window.SJRecents.list().then(function (items){
+          var has = !!(items && items.length);
+          filesBtn.hidden = !has;
+          // genuinely first run → show the one-line explainer; returning users don't need it
+          var sub = document.getElementById('listenSub');
+          if (sub) sub.hidden = !(!has && !bk);
+        }).catch(function (){ if (filesBtn) filesBtn.hidden = false; });
+      } else if (filesBtn) filesBtn.hidden = false;
+    }
+    function openListen(){
+      if (!lSheet) return;
+      paintListen();
+      lSheet.hidden = false; adPause(); haptic('light');
+      prevBack = window.__sjBack;
+      window.__sjBack = function (){ closeListen(); return true; };   // Back closes the sheet, not the page
+    }
+    function closeListen(){
+      if (!lSheet) return;
+      lSheet.hidden = true; adResume();
+      window.__sjBack = prevBack; prevBack = null;
+    }
+    if (lBtn) lBtn.addEventListener('click', openListen);
+    var lCancel = document.getElementById('listenCancel');
+    if (lCancel) lCancel.addEventListener('click', closeListen);
+    if (lSheet) lSheet.addEventListener('click', function (e){ if (e.target === lSheet) closeListen(); });
+
+    /* the most recent book you haven't finished — the reason to come back daily */
+    function lastBook(){
+      try {
+        var all = JSON.parse(localStorage.getItem('sj_reading') || '[]');
+        return all.filter(function (x){ return x && x.docId && x.pct < 97; })[0] || null;
+      } catch (e) { return null; }
+    }
+    if (lSheet) lSheet.addEventListener('click', function (e){
+      var b = e.target && e.target.closest && e.target.closest('.scan-opt'); if (!b) return;
+      var mode = b.getAttribute('data-listen'); haptic('light');
+      if (mode === 'link'){
+        closeListen();
+        var K = window.SnapJarKit; if (!K || !K.ask) return;
+        K.ask({ title: 'Listen to a link', body: 'Paste an article or PDF link and SnapJar will read it to you.', value: '', ok: 'Go' }).then(function (v){
+          var url = (v || '').trim(); if (!url) return;
+          if (!/^https?:\/\//i.test(url)) url = 'https://' + url;     // people paste bare domains
+          if (K._pdfLink(url)) K.openFromLink(url); else K.readFromLink(url);
+        });
+        return;
+      }
+      if (mode === 'share'){
+        closeListen();
+        if (window.SnapJarKit && window.SnapJarKit.ask) window.SnapJarKit.ask({
+          title: 'Share anything to SnapJar',
+          body: 'In any app — a browser, email, or notes — tap Share and choose SnapJar. A link is read as a clean article; selected text is read as-is. It works from anywhere on your phone.',
+          ok: 'Got it', confirm: true
+        });
+        return;
+      }
+      closeListen();
+      if (mode === 'document') location.href = '/tools/pdf-studio.html?open=1&listen=1';
+      else if (mode === 'scan') location.href = '/tools/text-scan.html';
+      else if (mode === 'photo') location.href = '/tools/text-scan.html?src=gallery';
+      else if (mode === 'files') location.href = '/recent.html';
+    });
+
+    /* the resume card is its own control, not a grid tile */
+    var contBtn = document.getElementById('listenCont');
+    if (contBtn) contBtn.addEventListener('click', function (){
+      var bk = lastBook(); if (!bk) { closeListen(); return; }
+      haptic('light'); closeListen();
+      location.href = '/tools/pdf-studio.html?recent=' + encodeURIComponent(bk.docId) + '&listen=1';
+    });
+
+    /* Leaving message — intercept hardware Back: navigate back in-page if possible,
+       otherwise (about to exit) show the rate prompt before quitting. */
+    var rate = document.getElementById('appRate');
+    function showRate(){ if (rate) rate.hidden = false; adPause(); }
+    var App = Plug('App');
+    function rateSeen(){ try { return localStorage.getItem('sj_rate_seen') === '1'; } catch (e) { return true; } }
+    function markRateSeen(){ try { localStorage.setItem('sj_rate_seen', '1'); } catch (e) {} }
+    if (App) {
+      try {
+        App.addListener('backButton', function (info) {
+          if (document.body.classList.contains('sc-on')) return;   // scanner handles its own Back
+          // A page can claim this Back press (close its open sheet / leave a sub-mode) by
+          // defining __sjBack and returning true. Without this, Back inside the PDF reader
+          // fell through to history.back() and threw the user out of the document mid-task.
+          try { if (window.__sjBack && window.__sjBack() === true) return; } catch (e) {}
+          if (rate && !rate.hidden) { rate.hidden = true; adResume(); try { App.exitApp(); } catch (e) {} return; }
+          if (info && info.canGoBack) { window.history.back(); return; }
+          // At the root: show the rate ask ONCE in the app's lifetime, then always just exit.
+          if (!rateSeen()) { markRateSeen(); showRate(); }
+          else { try { App.exitApp(); } catch (e) {} }
+        });
+      } catch (e) {}
+      var go = document.getElementById('appRateGo'), ex = document.getElementById('appRateExit');
+      if (go) go.addEventListener('click', function () {
+        markRateSeen();
+        try { window.open('market://details?id=com.snapjar.app', '_system'); }
+        catch (e) { try { window.open('https://play.google.com/store/apps/details?id=com.snapjar.app', '_system'); } catch (_) {} }
+        if (rate) rate.hidden = true; adResume();
+      });
+      if (ex) ex.addEventListener('click', function () { if (rate) rate.hidden = true; try { App.exitApp(); } catch (e) {} });
+      if (rate) rate.addEventListener('click', function (e) { if (e.target === rate) { rate.hidden = true; adResume(); } });
+    }
+  })();
+</script>

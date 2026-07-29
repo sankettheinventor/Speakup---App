@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import WebHome from '../web/WebHome.astro';
+import AppHome from '../app/AppHome.astro';
+
+// One route, two homes: the app gets the native-style AppHome (bottom-nav shell,
+// icon grid); the website keeps its SEO-tuned WebHome. Tool pages are shared.
+const IS_APP = import.meta.env.PUBLIC_APP_BUILD === '1';
+const title = 'SnapJar — Free Online Calculators & Image Tools';
+const description = 'Free, private calculators & image tools — EMI, mortgage, SIP, tax, watermark, PDF and more. Everything runs in your browser; nothing is uploaded.';
+---
+<Base title={title} description={description}>
+  {IS_APP ? <AppHome /> : <WebHome />}
+</Base>

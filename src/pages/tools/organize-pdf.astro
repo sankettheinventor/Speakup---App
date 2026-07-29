@@ -1,0 +1,164 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Organize PDF — Reorder, Delete & Rotate Pages (Free, Private)';
+const description = 'Free organize PDF tool. Reorder, delete and rotate individual PDF pages with live thumbnails, then save the rebuilt file — in your browser, nothing uploaded.';
+const faqItems = [
+  { q: 'How does this organize PDF tool work?', a: 'Drop in a PDF and a thumbnail of every page is rendered in your browser. You can drag pages to reorder them, move them up or down, delete pages you do not want, and rotate any page 90 degrees. Click Save PDF to rebuild a new file with your changes applied.' },
+  { q: 'Is my PDF uploaded or stored anywhere?', a: 'No. The thumbnails are rendered and the new PDF is rebuilt entirely in your browser using JavaScript. Your file never leaves your device and nothing is uploaded, stored, or shared.' },
+  { q: 'Can I rotate just one page instead of the whole document?', a: 'Yes. Each page thumbnail has its own rotate button that turns that single page 90 degrees clockwise. You can rotate different pages by different amounts before saving.' },
+  { q: 'How do I reorder pages?', a: 'Drag a page thumbnail onto another position, or use the up and down arrows on each page. The order you see in the grid is exactly the order saved into the new PDF.' },
+  { q: 'Are deleted pages really removed from the saved file?', a: 'Yes. When you click the remove button on a page it is dropped from the grid, and only the remaining pages are copied into the rebuilt PDF, so deleted pages are not included in the download.' },
+  { q: 'Is there a page limit or does it cost anything?', a: 'The tool is completely free with no page limit. Because everything runs locally, very large PDFs render and rebuild more slowly on lower-powered devices since it depends on your own memory and processor.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drag a PDF onto the drop zone or click browse to pick a file from your device.' },
+  { name: 'Reorder, delete or rotate', text: 'Drag pages or use the arrows to reorder, click the remove button to delete a page, and click rotate to turn a single page 90 degrees.' },
+  { name: 'Save the new PDF', text: 'Click Save PDF to rebuild the document with your kept pages in the new order with their rotations, and download organized.pdf.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap">
+    <p class="kicker">PDF Tool</p><h1>Organize PDF</h1>
+    <p>Drop in a PDF, then drag to reorder, delete or rotate each page on a live thumbnail grid — right here in your browser.</p>
+  </div></header>
+  <div class="wrap"><div class="tool org">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">🗂️</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <p id="warn" class="warn" hidden>⚠ The PDF engine has not finished loading. Please wait a second and try again, or refresh the page.</p>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <p class="hint">Drag pages to reorder. Use the buttons on each page to move, rotate 90°, or remove it.</p>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Save PDF</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status"></p>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How to organize a PDF</h2>
+    <p>Drop in a PDF and every page appears as a thumbnail you can rearrange. Drag pages into a new order, delete the ones you do not need, and rotate individual pages that came in sideways — then click Save PDF to download a cleanly rebuilt document. It is the quickest way to tidy up a scan or reshuffle a report before sending it. Everything happens in your browser, so your file is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/split-pdf">Split PDF →</a><a href="/tools/rotate-pdf">Rotate PDF →</a><a href="/tools/pdf-tools">Merge PDF →</a></div>
+  </div>
+  <style is:global>
+    .org .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .org .drop.drag{border-color:var(--brand)}.org .drop-ic{font-size:40px;margin-bottom:8px}.org .drop-t{font-size:16px;font-weight:600}.org .drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .org .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .org{padding:20px}.org .info{font-size:14px;font-weight:600;margin-bottom:6px}.org .hint{font-size:13px;color:var(--dim);margin-bottom:14px}
+    .org .warn{font-size:13px;font-weight:600;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:14px}
+    .org .thumbs{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:16px}
+    .org .pcell{position:relative;width:130px;text-align:center;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:8px;cursor:grab}
+    .org .pcell.dragover{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand) inset}
+    .org .pcell.dragging{opacity:.45}
+    .org .pcell img{width:114px;border:1px solid var(--line);border-radius:6px;background:#fff;display:block;margin:0 auto}
+    .org .pnum{font-size:12px;font-weight:700;color:var(--dim);margin-top:6px}
+    .org .pbtns{display:flex;justify-content:center;gap:4px;margin-top:6px;flex-wrap:wrap}
+    .org .pbtns button{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;line-height:1;padding:0}
+    .org .pbtns button:hover{border-color:var(--brand);color:var(--brand)}
+    .org .pbtns button.del:hover{border-color:#dc2626;color:#dc2626}
+    .org .pbtns button:disabled{opacity:.35;cursor:default}
+    .org .acts{display:flex;gap:10px}
+    .org .wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .org .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.org .status{margin-top:10px;font-size:13px;color:var(--dim)}
+  </style>
+  <HowTo task="organize a PDF" steps={howSteps} />
+  <AppLd name="Organize PDF" description="Drop or browse to a PDF and reorder, delete or rotate individual pages on a live thumbnail grid, then save the rebuilt file — all in your browser." category="BusinessApplication" features={["Drag-and-drop or browse to load a PDF", "Live thumbnail of every page rendered in-browser", "Reorder pages by drag-and-drop or up/down arrows", "Delete pages you do not need", "Rotate individual pages 90 degrees", "Rebuilds and downloads a new PDF — nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as pdfjsLib from 'pdfjs-dist';
+    import * as PDFLib from 'pdf-lib';
+    import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    (function(){
+      var bytes=null;     // original PDF bytes
+      var pages=[];       // [{src:srcIndex, rot:degrees, thumb:dataURL}]
+      var dragFrom=-1;
+      function $(i){return document.getElementById(i);}
+      function libsReady(){return typeof pdfjsLib!=='undefined'&&typeof PDFLib!=='undefined';}
+      function dl(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);}
+      async function load(file){
+        if(!libsReady()){$('warn').hidden=false;return;}
+        $('warn').hidden=true;
+        $('drop').hidden=true;$('editor').hidden=false;$('status').textContent='Rendering pages…';$('info').textContent=file.name;
+        try{
+          bytes=await file.arrayBuffer();
+          var pdf=await pdfjsLib.getDocument({data:bytes.slice(0),isEvalSupported:false}).promise;   // CVE-2024-4367
+          pages=[];
+          var _np=pdf.numPages, _cap=Math.min(_np,150);
+          if(_np>150 && window.SnapJarKit) window.SnapJarKit.toast('Large PDF — showing the first 150 of '+_np+' pages','info',4500);
+          for(var n=1;n<=_cap;n++){
+            $('status').textContent='Processing page '+n+' of '+_cap+'…';
+            var page=await pdf.getPage(n);var vp=page.getViewport({scale:0.5});
+            var fit=window.SnapJarKit.fitDims(vp.width,vp.height);
+            if(fit.clamped){ vp=page.getViewport({scale:0.5*fit.scale}); }
+            var c=document.createElement('canvas');c.width=Math.max(1,Math.round(vp.width));c.height=Math.max(1,Math.round(vp.height));
+            await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+            pages.push({src:n-1,rot:0,thumb:c.toDataURL('image/jpeg',0.7)});
+            await window.SnapJarKit.breathe();
+          }
+          $('info').textContent=file.name+' · '+pages.length+' pages';
+          $('status').textContent='';
+          render();
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      function render(){
+        var t=$('thumbs');t.innerHTML='';
+        pages.forEach(function(p,i){
+          var cell=document.createElement('div');cell.className='pcell';cell.draggable=true;cell.dataset.i=i;
+          var im=document.createElement('img');im.src=p.thumb;im.style.transform='rotate('+p.rot+'deg)';
+          var num=document.createElement('div');num.className='pnum';num.textContent='Page '+(i+1);
+          var btns=document.createElement('div');btns.className='pbtns';
+          var up=mkBtn('↑','Move up',function(){move(i,i-1);});up.disabled=i===0;
+          var down=mkBtn('↓','Move down',function(){move(i,i+1);});down.disabled=i===pages.length-1;
+          var rot=mkBtn('↻','Rotate 90°',function(){p.rot=(p.rot+90)%360;render();});
+          var del=mkBtn('✕','Remove page',function(){ if(pages.length<=1){ if(window.SnapJarKit) window.SnapJarKit.toast('A PDF needs at least one page','warn'); return; } pages.splice(i,1);render();});del.className='del';
+          btns.appendChild(up);btns.appendChild(down);btns.appendChild(rot);btns.appendChild(del);
+          cell.appendChild(im);cell.appendChild(num);cell.appendChild(btns);
+          cell.addEventListener('dragstart',function(e){dragFrom=i;cell.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+          cell.addEventListener('dragend',function(){dragFrom=-1;cell.classList.remove('dragging');});
+          cell.addEventListener('dragover',function(e){e.preventDefault();cell.classList.add('dragover');});
+          cell.addEventListener('dragleave',function(){cell.classList.remove('dragover');});
+          cell.addEventListener('drop',function(e){e.preventDefault();cell.classList.remove('dragover');if(dragFrom>-1&&dragFrom!==i)move(dragFrom,i);});
+          t.appendChild(cell);
+        });
+      }
+      function mkBtn(label,title,fn){var b=document.createElement('button');b.type='button';b.textContent=label;b.title=title;b.onclick=fn;return b;}
+      function move(from,to){if(to<0||to>=pages.length)return;var pg=pages.splice(from,1)[0];pages.splice(to,0,pg);render();}
+      async function go(){
+        if(!bytes||!pages.length){$('status').textContent='Add a PDF first.';return;}
+        if(typeof PDFLib==='undefined'){$('warn').hidden=false;return;}
+        $('status').textContent='Saving…';
+        try{
+          var src=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});
+          var out=await PDFLib.PDFDocument.create();
+          var srcIdx=pages.map(function(p){return p.src;});
+          var copied=await out.copyPages(src,srcIdx);
+          copied.forEach(function(pg,i){
+            var add=pages[i].rot;
+            if(add){var cur=pg.getRotation().angle||0;pg.setRotation(PDFLib.degrees((cur+add)%360));}
+            out.addPage(pg);
+          });
+          var data=await out.save();
+          dl(new Blob([data],{type:'application/pdf'}),'organized.pdf');
+          $('status').textContent='Done — saved '+pages.length+' page(s).';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit.guard('go',go);
+      $('reset').onclick=function(){bytes=null;pages=[];$('thumbs').innerHTML='';$('file').value='';$('status').textContent='';$('warn').hidden=true;$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

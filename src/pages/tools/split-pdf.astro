@@ -1,0 +1,86 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Split PDF — Separate PDF Pages (Free, Private)';
+const description = 'Free split PDF tool. Break a PDF into individual one-page PDFs and download them zipped — in your browser, nothing uploaded.';
+const faqItems = [
+  { q: 'How does this split PDF tool work?', a: 'Drop in a PDF and it separates every page into its own one-page PDF file, then bundles them all into a single .zip you can download. The whole process runs in your browser using JavaScript.' },
+  { q: 'Is my file uploaded or stored anywhere?', a: 'No. Your PDF is processed entirely in your browser and never leaves your device — nothing is uploaded, stored, or shared with any server.' },
+  { q: 'What do I get when I split a PDF?', a: 'You get a ZIP archive containing one PDF per page, named page-1.pdf, page-2.pdf, and so on, matching the original page order.' },
+  { q: 'Can I split a password-protected PDF?', a: 'The tool attempts to open encrypted PDFs by ignoring basic encryption, so many protected files will still split. Strongly encrypted documents that require a password to open may not work.' },
+  { q: 'Is there a page limit or does it cost anything?', a: 'The tool is completely free with no page limit, though very large PDFs take longer and depend on your device\'s available memory since all work happens locally.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drag a PDF onto the drop zone or click browse to pick a file from your device.' },
+  { name: 'Check the page count', text: 'Review the file name and page count shown once the PDF loads.' },
+  { name: 'Split and download', text: 'Click Split & download (.zip) to separate every page into its own PDF and save the bundled split-pages.zip.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">PDF Tool</p><h1>Split PDF</h1>
+    <p>Drop in your PDF and split every page into its own file — right here in your browser.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">📄</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Split &amp; download (.zip)</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status"></p>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How to split a PDF</h2>
+    <p>Drop in a PDF and we'll separate it into individual one-page PDF files, bundled into a single zip you can download. It's the quickest way to pull pages apart for sending separately or reorganising. Everything happens in your browser — your document is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/pdf-tools">Merge PDF →</a><a href="/tools/extract-pages">Extract Pages →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim)}
+  </style>
+  <HowTo task="split a PDF" steps={howSteps} />
+  <AppLd name="Split PDF" description="Drag and drop a PDF to split every page into its own one-page file and download them all as a zip, processed entirely in your browser." category="BusinessApplication" features={["Drag-and-drop PDF upload", "Splits each page into a separate PDF", "Downloads all pages as a single zip", "Opens encrypted PDFs by ignoring basic encryption", "100% client-side — nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as PDFLib from 'pdf-lib';
+    import JSZip from 'jszip';
+    (function(){
+      var bytes=null,count=0,srcName='document';
+      function $(i){return document.getElementById(i);}
+      async function load(f){
+        $('drop').hidden=true;$('editor').hidden=false;
+        try{
+          bytes=await f.arrayBuffer();srcName=(f.name.replace(/\.[^.]+$/,'')||'document');var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});count=doc.getPageCount();$('info').textContent=f.name+' · '+count+' pages';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      async function go(){
+        if(!bytes||typeof PDFLib==='undefined')return;$('status').textContent='Splitting…';
+        try{
+          var src=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true}),zip=new JSZip();
+          for(var i=0;i<count;i++){$('status').textContent='Processing page '+(i+1)+' of '+count+'…';var d=await PDFLib.PDFDocument.create();var[p]=await d.copyPages(src,[i]);d.addPage(p);zip.file('page-'+(i+1)+'.pdf',await d.save());await window.SnapJarKit.breathe();}
+          var blob=await zip.generateAsync({type:'blob'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=srcName+'-split-pages.zip';a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+          $('status').textContent='Done — '+count+' pages.';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit.guard('go',go);$('reset').onclick=function(){bytes=null;$('file').value='';$('status').textContent='';$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

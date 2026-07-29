@@ -1,0 +1,91 @@
+---
+import Base from '../layouts/Base.astro';
+const title = 'Open-source licenses — SnapJar';
+const description = 'The open-source software and assets that power SnapJar, with their licenses and attributions.';
+
+// Bundled third-party components. SnapJar is grateful to these projects.
+const libs = [
+  { n: 'PDF.js', v: '3.11.174', l: 'Apache-2.0', c: 'Mozilla Foundation', u: 'Renders and reads PDF pages' },
+  { n: 'pdf-lib', v: '1.17.1', l: 'MIT', c: 'Andrew Dillon', u: 'Creates and edits PDF files' },
+  { n: 'jsPDF', v: '4.2.1', l: 'MIT', c: 'James Hall & yWorks GmbH', u: 'Generates PDFs from tools' },
+  { n: 'JSZip', v: '3.10.1', l: 'MIT', c: 'Stuart Knightley', u: 'Bundles files into .zip archives' },
+  { n: 'SheetJS (xlsx)', v: '0.20.3', l: 'Apache-2.0', c: 'SheetJS LLC', u: 'Reads Excel / CSV spreadsheets' },
+  { n: 'docx', v: '8.5.0', l: 'MIT', c: 'Dolan Miu', u: 'Writes Word (.docx) documents' },
+  // DOMPurify is dual-licensed (MPL-2.0 OR Apache-2.0). SnapJar elects Apache-2.0, so no
+  // MPL source-availability obligation applies. Stating the election explicitly is the point.
+  { n: 'DOMPurify', v: '3.4.12', l: 'Apache-2.0 (elected; dual MPL-2.0 OR Apache-2.0)', c: 'Cure53', u: 'Sanitises HTML when building PDFs' },
+  { n: 'canvg', v: '3.0.11', l: 'MIT', c: 'canvg contributors', u: 'Renders SVG into PDF/canvas output' },
+  { n: 'pako', v: '1.0.11', l: 'MIT AND Zlib', c: 'Vitaly Puzrin & Andrey Tupitsin', u: 'Compresses PDF & archive streams' },
+  { n: 'fflate', v: '0.8.3', l: 'MIT', c: 'Arjun Barrett', u: 'Fast zip compression' },
+  { n: '@xmldom/xmldom', v: '0.9.10', l: 'MIT', c: 'xmldom contributors', u: 'Parses Office XML documents' },
+  { n: 'Mammoth', v: '1.12', l: 'BSD-2-Clause', c: 'Michael Williamson', u: 'Reads Word (.docx) documents' },
+  { n: 'pptx-preview', v: '1.0.7', l: 'ISC', c: 'pptx-preview contributors', u: 'Previews PowerPoint (.pptx)' },
+  { n: 'Tesseract.js', v: '5.1.1', l: 'Apache-2.0', c: 'Tesseract.js contributors', u: 'On-device OCR (web fallback)' },
+  { n: 'Tesseract OCR data (eng)', v: '4.0', l: 'Apache-2.0', c: 'Google / Tesseract contributors', u: 'English recognition model' },
+  { n: 'html2canvas', v: '1.4.1', l: 'MIT', c: 'Niklas von Hertzen', u: 'Renders rich documents to image' },
+  { n: 'heic2any', v: '0.0.4', l: 'MIT', c: 'Alexander Corotchi', u: 'Converts HEIC photos to JPG' },
+  { n: 'qr-code-styling', v: '1.6.0', l: 'MIT', c: 'Denys Kozak', u: 'Generates styled QR codes' },
+  { n: 'jsQR', v: '1.4.0', l: 'Apache-2.0', c: 'Cosmo Wolfe', u: 'Decodes QR codes from photos' },
+  { n: 'Capacitor & official plugins', v: '8.x', l: 'MIT', c: 'Ionic (Drifty Co.)', u: 'Native app runtime & bridges' },
+  { n: 'Capacitor Community plugins (AdMob, TTS)', v: '7–8.x', l: 'MIT', c: 'Capacitor Community', u: 'Ads & text-to-speech bridges' },
+  { n: 'Capacitor MLKit plugins', v: '8.1', l: 'MIT', c: 'Robin Genz (Capawesome)', u: 'Document scanner & OCR bridges' },
+  { n: 'Capacitor Printer plugin', v: '0.0.6', l: 'MIT', c: 'B. C. Yeşil', u: 'Native printing' },
+  { n: 'Google ML Kit', v: '16.x', l: 'Google APIs Terms of Service', c: 'Google LLC', u: 'On-device scan & text recognition' },
+  { n: 'Google Mobile Ads SDK', v: '24.x', l: 'Google APIs Terms of Service', c: 'Google LLC', u: 'Serves the ads that keep SnapJar free' },
+  { n: 'Google User Messaging Platform (UMP)', v: '3.x', l: 'Google APIs Terms of Service', c: 'Google LLC', u: 'Ad consent form (GDPR/CCPA)' },
+];
+const assets = [
+  { n: 'Microsoft Fluent Emoji (3D)', l: 'MIT', c: 'Microsoft Corporation', u: 'Tool icons & reader avatars' },
+  { n: 'Plus Jakarta Sans', l: 'SIL Open Font License 1.1', c: '2020 Tokotype', u: 'App typeface' },
+];
+---
+<Base title={title} description={description}>
+  <main>
+    <div class="wrap lic-wrap">
+      <h1 class="lic-h1">Open-source licenses</h1>
+      <p class="lic-intro">SnapJar is built on the shoulders of great open-source software. Thank you to every project and author below. All processing happens on your device.</p>
+
+      <h2 class="lic-h2">Software</h2>
+      <div class="lic-grid">
+        {libs.map((x) => (
+          <div class="lic-card">
+            <div class="lic-top"><span class="lic-name">{x.n}</span>{x.v && <span class="lic-ver">{x.v}</span>}</div>
+            <div class="lic-use">{x.u}</div>
+            <div class="lic-foot"><span class="lic-lic">{x.l}</span><span class="lic-c">© {x.c}</span></div>
+          </div>
+        ))}
+      </div>
+
+      <h2 class="lic-h2">Fonts &amp; assets</h2>
+      <div class="lic-grid">
+        {assets.map((x) => (
+          <div class="lic-card">
+            <div class="lic-top"><span class="lic-name">{x.n}</span></div>
+            <div class="lic-use">{x.u}</div>
+            <div class="lic-foot"><span class="lic-lic">{x.l}</span><span class="lic-c">© {x.c}</span></div>
+          </div>
+        ))}
+      </div>
+
+      <p class="lic-note">Full license texts are available from each project's homepage. MIT, BSD and Apache-2.0 licenses permit reuse with attribution; the SIL Open Font License covers the bundled typeface. This page is provided as attribution.</p>
+    </div>
+  </main>
+
+  <style>
+    .lic-wrap{ max-width:820px; margin:0 auto; padding-top:var(--s4); padding-bottom:var(--s7); }
+    .lic-h1{ font-size:clamp(26px,7vw,34px); font-weight:800; letter-spacing:-.03em; color:var(--app-ink,var(--txt)); }
+    .lic-intro{ margin-top:10px; font-size:14.5px; line-height:1.6; color:var(--app-dim,var(--dim)); max-width:60ch; }
+    .lic-h2{ margin:var(--s6) 0 var(--s4); font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--app-dim,var(--dim)); }
+    .lic-grid{ display:grid; grid-template-columns:1fr; gap:11px; }
+    @media(min-width:620px){ .lic-grid{ grid-template-columns:1fr 1fr; } }
+    .lic-card{ padding:14px 15px; border-radius:16px; background:var(--app-tile,var(--surface)); box-shadow:var(--app-shadow, 0 8px 24px -16px rgba(22,16,44,.18)); }
+    .lic-top{ display:flex; align-items:baseline; gap:8px; }
+    .lic-name{ font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--app-ink,var(--txt)); }
+    .lic-ver{ font-size:11.5px; font-weight:600; color:var(--app-dim,var(--dim)); }
+    .lic-use{ font-size:12.5px; color:var(--app-dim,var(--dim)); margin:5px 0 10px; line-height:1.45; }
+    .lic-foot{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+    .lic-lic{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; background:color-mix(in srgb,var(--app-accent,var(--brand)) 12%,transparent); color:var(--app-accent,var(--brand)); white-space:nowrap; }
+    .lic-c{ font-size:12px; color:var(--app-dim,var(--dim)); min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .lic-note{ margin-top:var(--s6); font-size:12.5px; line-height:1.6; color:var(--app-dim,var(--dim)); }
+  </style>
+</Base>

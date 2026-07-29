@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+*.log
+.env
+
+# Local dev/test screenshots at repo root
+/*.png
+
+# signing secrets — never commit
+android/keystore.properties
+android/*.jks
+android/*.keystore

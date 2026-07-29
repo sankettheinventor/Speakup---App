@@ -1,0 +1,30 @@
+# Decap CMS — visual editor for the SnapJar blog.
+# Uses Netlify Git Gateway: log in at /admin, write a post, hit publish → it commits
+# to GitHub and Netlify rebuilds. Enable Identity + Git Gateway in the Netlify dashboard.
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "public/assets/uploads"
+public_folder: "/assets/uploads"
+publish_mode: editorial_workflow
+
+collections:
+  - name: "blog"
+    label: "Blog Posts"
+    label_singular: "Blog Post"
+    folder: "src/content/blog"
+    create: true
+    slug: "{{slug}}"
+    preview_path: "blog/{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Meta description (50–160 chars)", name: "description", widget: "text" }
+      - { label: "Publish date", name: "date", widget: "datetime" }
+      - { label: "Category", name: "category", widget: "select", default: "Guides",
+          options: ["Image Tools", "Finance", "Web Design", "Color", "Text", "Guides"] }
+      - { label: "Cover emoji", name: "emoji", widget: "string", default: "📄" }
+      - { label: "Related tool URL (optional)", name: "tool", widget: "string", required: false, hint: "e.g. /tools/watermark" }
+      - { label: "Tool button label (optional)", name: "toolName", widget: "string", required: false }
+      - { label: "Draft (hide from site)", name: "draft", widget: "boolean", default: false, required: false }
+      - { label: "Body", name: "body", widget: "markdown" }

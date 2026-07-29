@@ -1,0 +1,140 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'PDF to Word — Convert PDF to Editable DOCX Free (Private)';
+const description = 'Free PDF to Word converter. Pull the text out of a PDF into an editable .docx document, right in your browser. Best for text-based PDFs. Nothing is uploaded.';
+const faqItems = [
+  { q: 'How do I convert a PDF to Word?', a: 'Drop or browse to a PDF. The text is extracted in your browser and rebuilt into an editable Word .docx that you download — no upload, no signup.' },
+  { q: 'Will it look exactly like the PDF?', a: 'It recovers the text into editable paragraphs, page by page. Exact fonts, columns and precise positioning are not reproduced — the goal is editable text you can reuse, not a pixel-perfect copy.' },
+  { q: 'Does it work on scanned PDFs?', a: 'No. Scanned PDFs are images with no real text, so nothing can be extracted. For a scan, use the Scan text (OCR) tool first to recognise the words, then save those as a document.' },
+  { q: 'Are images and tables kept?', a: 'This converter focuses on the text. Embedded images and complex table layouts are not carried across — you get clean, editable paragraphs of the document’s text.' },
+  { q: 'Is my PDF uploaded anywhere?', a: 'No. Everything runs locally in your browser using JavaScript. Your PDF is never uploaded, stored or shared — it stays on your device.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the box or click browse to choose one from your device.' },
+  { name: 'Extract the text', text: 'The text is pulled out page by page and rebuilt into editable paragraphs.' },
+  { name: 'Download the Word file', text: 'Click Download Word to save an editable .docx to your device.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">Document Tool</p><h1>PDF to Word</h1>
+    <p>Drop in a PDF and pull its text into an editable Word .docx — page by page, right here in your browser.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">📄</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">Best for text PDFs (not scans) · text becomes editable · 🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Download Word</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <div class="preview-wrap"><div id="preview" class="preview" aria-label="Extracted text preview"></div></div>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>Convert PDF to editable Word, privately</h2>
+    <p>Got a PDF you need to edit? Drop it here and pull the text into an editable Word .docx you can open in Word, Google Docs or Pages — perfect for reusing a contract, quote or report. It works best on PDFs that already contain real text (not scans). Everything runs locally in your browser, so your document is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/word-to-pdf">Word to PDF →</a><a href="/tools/pdf-studio?ocr=1">Scan text (OCR) →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px;word-break:break-word}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn:disabled{opacity:.5;cursor:default}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim);min-height:18px}
+    .preview-wrap{margin-top:16px;max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}
+    .preview{padding:18px 20px;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;color:var(--txt)}
+  </style>
+  <HowTo task="convert a PDF to an editable Word document" steps={howSteps} />
+  <AppLd name="PDF to Word Converter" description="Drop a PDF, extract its text page by page, preview it, then download an editable Word .docx in your browser. Best for text-based PDFs; nothing is uploaded." category="BusinessApplication" features={["Drag-and-drop or browse PDF upload","Page-by-page text extraction","Editable .docx output","Live text preview","100% in-browser, nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as pdfjsLib from 'pdfjs-dist';
+    import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
+    import { Document, Packer, Paragraph, TextRun, PageBreak } from 'docx';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    (function(){
+      var pages=null, srcName='document', busy=false;
+      function $(i){return document.getElementById(i);}
+      function status(m,kind){ var el=$('status'); el.textContent=m||''; el.style.color = kind==='err'?'var(--err,#e5484d)':(kind==='ok'?'var(--ok,#2bb673)':'var(--dim)'); if(window.SnapJarKit&&m&&kind) window.SnapJarKit.toast(m, kind==='err'?'err':kind==='ok'?'ok':'info'); }
+      function setReady(ok){ $('go').disabled=!ok; }
+      /* group a page's text items into lines (by y), then lines into a string */
+      function pageToLines(items){
+        var rows=[];
+        items.forEach(function(it){
+          var s=it.str; if(s==null) return;
+          var y=Math.round(it.transform[5]); var x=it.transform[4];
+          var row=null;
+          for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-y)<=3){ row=rows[i]; break; } }
+          if(!row){ row={y:y,parts:[]}; rows.push(row); }
+          row.parts.push({x:x,s:s});
+        });
+        rows.sort(function(a,b){ return b.y-a.y; });
+        return rows.map(function(r){ r.parts.sort(function(a,b){return a.x-b.x;}); return r.parts.map(function(p){return p.s;}).join('').replace(/[ \t]+/g,' ').replace(/\s+$/,''); });
+      }
+      async function load(f){
+        $('drop').hidden=true; $('editor').hidden=false; pages=null; setReady(false); $('preview').textContent='';
+        $('info').textContent=f.name;
+        status('Reading your PDF…');
+        try{
+          var buf=await f.arrayBuffer();
+          var pdf=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise;   // CVE-2024-4367
+          srcName=(f.name.replace(/\.pdf$/i,'')||'document');
+          var out=[], totalChars=0, preview='';
+          var _np=pdf.numPages, _cap=Math.min(_np,150);
+          if(_np>150 && window.SnapJarKit) window.SnapJarKit.toast('Large PDF — extracting the first 150 of '+_np+' pages','info',4500);
+          for(var p=1;p<=_cap;p++){
+            status('Extracting text — page '+p+' of '+_cap+'…');
+            var page=await pdf.getPage(p);
+            var tc=await page.getTextContent();
+            var lines=pageToLines(tc.items);
+            out.push(lines); totalChars+=lines.join('').length;
+            if(preview.length<4000) preview+=lines.join('\n')+'\n\n';
+            if(window.SnapJarKit) await window.SnapJarKit.breathe();
+          }
+          if(totalChars<2){ status('No selectable text found — this looks like a scanned PDF. Try the Scan text (OCR) tool instead.','err'); return; }
+          pages=out;
+          $('preview').textContent=preview.trim();
+          $('info').textContent=f.name+' · '+pdf.numPages+' page'+(pdf.numPages===1?'':'s');
+          setReady(true);
+          status('Ready — check the text, then Download Word.','ok');
+        }catch(err){
+          status('Could not read this PDF — it may be corrupt or password-protected.','err');
+        }
+      }
+      async function makeDocx(){
+        if(!pages||busy) return; busy=true;
+        status('Building your Word file…');
+        try{
+          var children=[];
+          for(var p=0;p<pages.length;p++){
+            pages[p].forEach(function(line){
+              children.push(new Paragraph({ children:[ new TextRun(line||'') ] }));
+            });
+            if(p<pages.length-1) children.push(new Paragraph({ children:[ new PageBreak() ] }));
+          }
+          var doc=new Document({ sections:[{ children:children }] });
+          var blob=await Packer.toBlob(doc);
+          var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=srcName+'.docx'; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+          status('Done — your editable Word file is ready.','ok');
+        }catch(err){ status('Could not create the Word file — please try again.','err'); }
+        busy=false;
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit?window.SnapJarKit.guard('go',makeDocx):makeDocx;
+      $('reset').onclick=function(){pages=null;$('file').value='';$('preview').textContent='';status('');$('editor').hidden=true;$('drop').hidden=false;};
+      setReady(false);
+    })();
+  </script>
+</Base>

@@ -1,0 +1,152 @@
+---
+import Base from '../../layouts/Base.astro';
+const title = 'QR & Barcode Scanner — SnapJar';
+const description = 'Scan QR codes and barcodes on your device — instant native scanning, open links or copy text, 100% private.';
+---
+<Base title={title} description={description}>
+  <div class="qr-app" id="qrApp">
+    <!-- loading / error -->
+    <div class="qr-screen qr-load" id="qrLoad">
+      <div class="qr-spin" id="qrSpin" aria-hidden="true"></div>
+      <div class="qr-load-t" id="qrLoadT">Opening scanner…</div>
+      <div class="qr-load-s" id="qrLoadS"></div>
+      <button class="qr-btn" id="qrRetry" type="button" hidden>Scan a code</button>
+      <button class="qr-btn qr-btn-ghost" id="qrClose2" type="button" hidden>Cancel</button>
+    </div>
+
+    <!-- result -->
+    <div class="qr-screen qr-result" id="qrResult" hidden>
+      <div class="qr-top">
+        <button class="qr-icon" id="qrClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <span class="qr-ttl">Scanned</span>
+        <span class="qr-icon" style="visibility:hidden"></span>
+      </div>
+      <div class="qr-body">
+        <div class="qr-rcard">
+          <div class="qr-type" id="qrType"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h4M14 21h.01"/></svg></div>
+          <div class="qr-kind" id="qrKind">QR code</div>
+          <div class="qr-val" id="qrVal"></div>
+        </div>
+      </div>
+      <div class="qr-actions">
+        <button class="qr-act qr-act-primary" id="qrOpen" type="button" hidden>Open link</button>
+        <button class="qr-act" id="qrCopy" type="button">Copy</button>
+        <button class="qr-act" id="qrAgain" type="button">Scan again</button>
+      </div>
+    </div>
+    <input id="qrGal" type="file" accept="image/*" hidden />
+  </div>
+
+  <style is:global>
+    body.qr-on{ overflow:hidden; }
+    .qr-app{ position:fixed; inset:0; z-index:4000; background:#0c0a14; color:#fff;
+      font-family:'Jakarta',system-ui,sans-serif; -webkit-user-select:none; user-select:none; }
+    .qr-screen{ position:absolute; inset:0; display:flex; flex-direction:column; }
+    .qr-screen[hidden]{ display:none; }
+    .qr-load{ align-items:center; justify-content:center; gap:13px; text-align:center; padding:0 34px; }
+    .qr-spin{ width:46px; height:46px; border-radius:50%; border:3px solid rgba(255,255,255,.16); border-top-color:#8b7bff; animation:qr-rot .8s linear infinite; }
+    .qr-spin[hidden]{ display:none; }
+    @keyframes qr-rot{ to{ transform:rotate(360deg); } }
+    .qr-load-t{ font-size:18px; font-weight:800; }
+    .qr-load-s{ font-size:13.5px; color:#aea7c5; line-height:1.5; max-width:300px; }
+    .qr-btn{ margin-top:6px; width:100%; max-width:300px; padding:15px; border:0; border-radius:15px; cursor:pointer;
+      background:linear-gradient(135deg,#ff5e7e,#8b7bff); color:#fff; font:inherit; font-weight:800; font-size:16px; box-shadow:0 12px 30px -12px #8b7bff; }
+    .qr-btn[hidden]{ display:none; } .qr-btn:active{ transform:scale(.97); }
+    .qr-btn-ghost{ background:rgba(255,255,255,.1); box-shadow:none; font-size:15px; padding:13px; margin-top:0; }
+
+    .qr-top{ display:flex; align-items:center; gap:12px; padding:calc(12px + env(safe-area-inset-top)) 16px 12px; flex:0 0 auto; }
+    .qr-ttl{ flex:1; text-align:center; font-size:16px; font-weight:800; }
+    .qr-icon{ width:42px; height:42px; border-radius:50%; border:0; background:rgba(255,255,255,.1); color:#fff; display:grid; place-items:center; cursor:pointer; flex:0 0 auto; }
+    .qr-icon svg{ width:20px; height:20px; } .qr-icon:active{ transform:scale(.92); }
+
+    .qr-body{ flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; padding:16px 24px; }
+    .qr-rcard{ width:100%; max-width:380px; background:#17131f; border:1px solid rgba(255,255,255,.1); border-radius:22px;
+      padding:30px 24px; text-align:center; box-shadow:0 20px 50px -20px rgba(0,0,0,.7); }
+    .qr-type{ width:64px; height:64px; border-radius:19px; display:grid; place-items:center; margin:0 auto 16px;
+      background:linear-gradient(140deg,#6366f1,#818cf8); box-shadow:0 12px 28px -10px #6366f1; }
+    .qr-type svg{ width:32px; height:32px; color:#fff; }
+    .qr-kind{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:#aea7c5; margin-bottom:8px; }
+    .qr-val{ font-size:16px; font-weight:600; line-height:1.5; word-break:break-word; color:#fff; }
+    .qr-actions{ display:flex; flex-direction:column; gap:10px; padding:14px 18px calc(20px + env(safe-area-inset-bottom)); flex:0 0 auto; }
+    .qr-act{ width:100%; padding:15px; border:0; border-radius:14px; cursor:pointer; font:inherit; font-weight:800; font-size:15px;
+      background:rgba(255,255,255,.1); color:#fff; }
+    .qr-act:active{ transform:scale(.98); }
+    .qr-act-primary{ background:linear-gradient(135deg,#ff5e7e,#8b7bff); box-shadow:0 10px 26px -12px #8b7bff; }
+    .qr-act[hidden]{ display:none; }
+  </style>
+
+  <script>
+    (function () {
+      var $ = function (id){ return document.getElementById(id); };
+      var K = function (){ return window.SnapJarKit; };
+      function toast(m, t){ if (K() && K().toast) K().toast(m, t || 'info'); }
+      function haptic(s){ if (K() && K().haptic) K().haptic(s); }
+      function plugin(n){ return (K() && K().plugin) ? K().plugin(n) : null; }
+      var BS = plugin('BarcodeScanner');
+      var triedInstall = false, current = '';
+
+      document.body.classList.add('qr-on');
+
+      function busy(t, s){ show('qrLoad'); $('qrSpin').hidden = false; $('qrRetry').hidden = true; $('qrClose2').hidden = true; $('qrLoadT').textContent = t || 'Opening scanner…'; $('qrLoadS').textContent = s || ''; }
+      function err(t, s){ show('qrLoad'); $('qrSpin').hidden = true; $('qrLoadT').textContent = t; $('qrLoadS').textContent = s || ''; $('qrRetry').hidden = false; $('qrClose2').hidden = false; }
+
+      function boot(){ if (BS && BS.scan) scanNow(); else err('Scanner needs the app', 'Open SnapJar to scan QR codes', true); }
+
+      async function ensureModule(){
+        try { var a = await BS.isGoogleBarcodeScannerModuleAvailable(); if (!a || a.available !== false) return true; } catch (e){ return true; }
+        busy('Preparing the scanner…', 'One-time setup (a few MB)');
+        return new Promise(function (resolve){
+          var done = false; function fin(v){ if (!done){ done = true; resolve(v); } }
+          try { BS.addListener('googleBarcodeScannerModuleInstallProgress', function (ev){ if (ev && (ev.progress >= 100 || ev.state === 4)) fin(true); else if (ev && ev.state === 5) fin(false); }); } catch (e) {}
+          BS.installGoogleBarcodeScannerModule().catch(function (){ fin(false); });
+          setTimeout(function (){ fin(true); }, 45000);
+        });
+      }
+
+      async function scanNow(){
+        busy('Opening scanner…');
+        try {
+          try { var perm = await BS.requestPermissions(); if (perm && perm.camera && perm.camera !== 'granted' && perm.camera !== 'limited'){ err('Camera access needed', 'Allow camera access to scan codes'); return; } } catch (e) {}
+          var res = await BS.scan();
+          var codes = (res && res.barcodes) || [];
+          if (!codes.length){ leave(); return; }   // cancelled
+          showResult(codes[0]);
+        } catch (e){
+          var msg = (e && (e.message || e)) + '';
+          if (!triedInstall && /module|unavailable|not available|install/i.test(msg)){ triedInstall = true; var ok = await ensureModule(); if (ok){ return scanNow(); } }
+          err('Couldn’t open the scanner', 'Tap to try again', true);
+        }
+      }
+
+      function showResult(b){
+        haptic('light');
+        var val = b.rawValue || b.displayValue || '';
+        current = val;
+        var type = (b.valueType || 'TEXT');
+        $('qrVal').textContent = val;
+        $('qrKind').textContent = type === 'URL' ? 'Link' : type === 'WIFI' ? 'Wi-Fi' : type === 'CONTACT_INFO' ? 'Contact' : type === 'PHONE' ? 'Phone' : type === 'EMAIL' ? 'Email' : 'QR code';
+        var isUrl = /^(https?:\/\/|www\.)/i.test(val);   // only offer Open for genuine http(s) links (not javascript:/data:/other schemes)
+        var o = $('qrOpen'); o.hidden = !isUrl;
+        show('qrResult');
+      }
+
+      $('qrOpen').addEventListener('click', function (){
+        var u = current; if (/^www\./i.test(u)) u = 'https://' + u;
+        var ok = false; try { var pu = new URL(u); ok = (pu.protocol === 'http:' || pu.protocol === 'https:'); } catch (e) { ok = false; }
+        if (!ok){ toast('This code isn’t a safe web link', 'warn'); return; }   // never navigate the app WebView to javascript:/data:/file:
+        try { window.open(u, '_system'); } catch (e){ /* no location.href fallback — it would run in the privileged app origin */ }
+      });
+      $('qrCopy').addEventListener('click', function (){ if (K() && K().copy) K().copy(current); else { try { navigator.clipboard.writeText(current); } catch (e) {} } toast('Copied', 'ok'); });
+      $('qrAgain').addEventListener('click', scanNow);
+      $('qrRetry').addEventListener('click', function (){ haptic('light'); scanNow(); });
+      $('qrClose').addEventListener('click', leave);
+      $('qrClose2').addEventListener('click', leave);
+
+      function show(id){ ['qrLoad', 'qrResult'].forEach(function (s){ $(s).hidden = s !== id; }); }
+      function leave(){ document.body.classList.remove('qr-on'); location.href = '/'; }
+
+      try { var App = plugin('App'); if (App && App.addListener) App.addListener('backButton', function (){ if (!document.body.classList.contains('qr-on')) return; if (!$('qrResult').hidden){ scanNow(); return; } leave(); }); } catch (e) {}
+      boot();
+    })();
+  </script>
+</Base>

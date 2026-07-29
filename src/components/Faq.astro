@@ -1,0 +1,30 @@
+---
+// Reusable FAQ: renders a visible accordion AND FAQPage JSON-LD from the same data.
+// Usage in a page:  import Faq from '../../components/Faq.astro'
+//   const faqItems = [{ q: '...', a: '...' }, ...]
+//   <Faq items={faqItems} />
+const { items = [], heading = 'Frequently asked questions' } = Astro.props;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: items.map((it) => ({
+    '@type': 'Question',
+    name: it.q,
+    acceptedAnswer: { '@type': 'Answer', text: it.a },
+  })),
+};
+---
+{items.length > 0 && (
+  <section class="faq" aria-label="Frequently asked questions">
+    <h2>{heading}</h2>
+    <div class="faq-list">
+      {items.map((it) => (
+        <details class="faq-item">
+          <summary>{it.q}</summary>
+          <div class="faq-a"><p set:html={it.a} /></div>
+        </details>
+      ))}
+    </div>
+    <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  </section>
+)}

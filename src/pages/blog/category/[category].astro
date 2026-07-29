@@ -1,0 +1,57 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { catSlug, cover } from '../../../lib/categories';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const cats = Array.from(new Set(posts.map((p) => p.data.category)));
+  return cats.map((category) => ({
+    params: { category: catSlug(category) },
+    props: {
+      category,
+      posts: posts
+        .filter((p) => p.data.category === category)
+        .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()),
+    },
+  }));
+}
+const { category, posts } = Astro.props;
+const fmt = (d: Date) => d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+---
+<Base title={`${category} — Guides & How-tos | SnapJar Blog`}
+      description={`SnapJar guides and tutorials in ${category}. Practical how-tos for our free tools.`}>
+  <header class="head"><div class="wrap">
+    <p class="kicker"><a href="/blog" style="color:var(--brand)">Blog</a> / Category</p>
+    <h1>{category}</h1>
+    <p>{posts.length} article{posts.length === 1 ? '' : 's'} in this category.</p>
+  </div></header>
+  <div class="wrap" style="padding-bottom:var(--s8)">
+    <div class="posts">
+      {posts.map((p) => (
+        <a class="post" href={`/blog/${p.slug}`}>
+          <div class="post-cover" style={cover(p.data.category)}><span>{p.data.emoji}</span></div>
+          <div class="post-body">
+            <span class="tag">{p.data.category}</span>
+            <h3>{p.data.title}</h3>
+            <p>{p.data.description}</p>
+            <div class="meta">{fmt(p.data.date)}</div>
+          </div>
+        </a>
+      ))}
+    </div>
+    <p style="margin-top:var(--s6)"><a href="/blog">← All articles</a></p>
+  </div>
+  <style>
+    .posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s4)}
+    .post{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;transition:transform .15s,border-color .15s}
+    .post:hover{transform:translateY(-3px);border-color:var(--brand);text-decoration:none}
+    .post-cover{height:140px;display:grid;place-items:center;color:#fff}.post-cover span{font-size:52px}
+    .post-body{padding:var(--s4)}
+    .tag{font-size:var(--t-xs);font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--brand);
+      background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 10px}
+    .post-body h3{font-size:var(--t-md);font-weight:700;color:var(--txt);margin:var(--s2) 0}
+    .post-body p{color:var(--dim);font-size:var(--t-sm)}
+    .meta{color:var(--dim);font-size:var(--t-sm);margin-top:var(--s3);font-weight:600}
+  </style>
+</Base>

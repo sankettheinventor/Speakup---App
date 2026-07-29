@@ -1,0 +1,55 @@
+---
+import Base from '../layouts/Base.astro';
+const SITE = Astro.site ?? new URL('https://snapjar.sankettoraskar-business.workers.dev/');
+// AboutPage + Organization entity data — gives answer engines a clear, citable
+// definition of who SnapJar is, what it does, and how it works.
+const aboutLd = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: 'About SnapJar',
+  url: new URL('/about', SITE).href,
+  mainEntity: {
+    '@type': 'Organization',
+    name: 'SnapJar',
+    url: SITE.href,
+    logo: new URL('/icon-512.png', SITE).href,
+    foundingDate: '2026',
+    founder: { '@type': 'Person', name: 'Sanket Toraskar' },
+    description:
+      'SnapJar is a free online toolbox of 40+ calculators and image and PDF tools that run entirely in the user\'s browser, with no signup and no file uploads.',
+    knowsAbout: ['online calculators', 'image tools', 'PDF tools', 'browser-based file processing', 'data privacy'],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: 'contact.snapjar@gmail.com',
+    },
+  },
+};
+---
+<Base title="About SnapJar — Free Private Browser Tools" description="SnapJar is a free online toolbox of 40+ calculators and image & PDF tools that run entirely in your browser. No signup, no uploads. Learn who's behind it.">
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(aboutLd)} />
+  </Fragment>
+  <header class="head"><div class="wrap"><p class="kicker">About</p><h1>About SnapJar</h1></div></header>
+  <div class="content">
+    <p><b>SnapJar is a free online toolbox of 40+ calculators and image &amp; PDF tools that run entirely in your browser.</b> There is no signup, no software to install, and no file uploads — every tool does its work locally on your own device.</p>
+
+    <h2>What is SnapJar?</h2>
+    <p>SnapJar is a website that hosts more than 40 free utilities in three groups: <b>finance and everyday calculators</b> (EMI, mortgage, SIP, income tax, compound interest and more), <b>image tools</b> (compress, convert, watermark, HEIC&nbsp;to&nbsp;JPG, favicon and color tools), and <b>PDF tools</b> (merge, split, rotate, add page numbers and image&nbsp;↔&nbsp;PDF). Each tool has its own page and works on any phone or computer.</p>
+
+    <h2>How does SnapJar protect my privacy?</h2>
+    <p><b>Nothing you enter or open is ever uploaded, stored, or seen by us.</b> SnapJar's tools run as JavaScript inside your browser, so the numbers you type and the images or PDFs you select are processed on your device and discarded when you close the tab. There is no account, no database of your files, and no server doing the work — which is why your data never leaves your device.</p>
+
+    <h2>Who is behind SnapJar?</h2>
+    <p>SnapJar is independently built and maintained by <b>Sanket Toraskar</b>, and launched in 2026. It is an indie project with a single goal: fast, clean, genuinely private tools that just work. Questions, feedback or a tool you'd like to see? Email <b>contact.snapjar@gmail.com</b>.</p>
+
+    <h2>Why we built it</h2>
+    <p>Most "free tool" sites are slow, cluttered with pop-ups, and quietly upload your files to their servers. We wanted the opposite: tools that load instantly, respect your privacy by design, and never make you sign up.</p>
+
+    <h2>How does SnapJar stay free?</h2>
+    <p>SnapJar is funded by unobtrusive advertising, placed so it never gets in the way of using a tool. That lets us keep every tool free for everyone, forever, with no paywalls or usage limits.</p>
+
+    <h2>A note on our calculators</h2>
+    <p>Our finance calculators are computational tools that show the math for the numbers you enter. They are for general information only and are <b>not financial advice</b>. For decisions about your money, consult a qualified professional.</p>
+  </div>
+</Base>

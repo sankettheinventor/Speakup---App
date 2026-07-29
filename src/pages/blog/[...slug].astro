@@ -1,0 +1,58 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { catSlug } from '../../lib/categories';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+const { post } = Astro.props;
+const { Content } = await post.render();
+const d = post.data.date;
+const dateStr = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Base title={`${post.data.title} | SnapJar Blog`} description={post.data.description}>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'Article',
+      headline: post.data.title, description: post.data.description,
+      datePublished: d.toISOString(),
+      author: { '@type': 'Organization', name: 'SnapJar' },
+      publisher: { '@type': 'Organization', name: 'SnapJar' },
+    })} />
+  </Fragment>
+  <article><div class="read prose">
+    <p class="kicker"><a href={`/blog/category/${catSlug(post.data.category)}`} style="color:var(--brand)">{post.data.category}</a></p>
+    <h1>{post.data.title}</h1>
+    <p class="ameta">{dateStr}</p>
+    <Content />
+    <div class="ad">Advertisement</div>
+    {post.data.tool && (
+      <div class="tool-cta">
+        <div class="tc-l"><div class="tc-t">Try it free, right now</div><div class="tc-s">Runs in your browser — nothing uploaded.</div></div>
+        <a class="btn" href={post.data.tool}>{post.data.toolName || 'Open the tool'} →</a>
+      </div>
+    )}
+    <p class="back"><a href="/blog">← All articles</a></p>
+  </div></article>
+  <style>
+    .prose{padding:var(--s7) 0 var(--s8)}
+    .prose h1{font-size:var(--t-xl);font-weight:800;letter-spacing:-1px;line-height:1.15;margin:var(--s2) 0 var(--s2)}
+    .ameta{color:var(--dim);font-size:var(--t-sm);font-weight:600;margin-bottom:var(--s5)}
+    .prose :global(h2){font-size:var(--t-lg);font-weight:800;letter-spacing:-.5px;margin:var(--s6) 0 var(--s3)}
+    .prose :global(h3){font-size:var(--t-md);font-weight:700;margin:var(--s5) 0 var(--s2)}
+    .prose :global(p){margin:0 0 var(--s4);color:var(--txt);line-height:1.7}
+    .prose :global(ul),.prose :global(ol){margin:0 0 var(--s4) 22px;color:var(--txt)}
+    .prose :global(li){margin-bottom:var(--s2);line-height:1.7}
+    .prose :global(a){color:var(--brand)}
+    .prose :global(blockquote){border-left:3px solid var(--brand);padding-left:var(--s4);margin:0 0 var(--s4);color:var(--dim)}
+    .prose :global(code){background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.9em}
+    .tool-cta{display:flex;flex-wrap:wrap;gap:var(--s4);align-items:center;justify-content:space-between;
+      background:var(--result-bg);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s5);margin:var(--s6) 0}
+    .tc-t{font-weight:800;font-size:var(--t-md)}.tc-s{color:var(--dim);font-size:var(--t-sm);margin-top:2px}
+    .btn{padding:var(--s3) var(--s5);border-radius:var(--r);font-weight:700;color:#fff;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .btn:hover{text-decoration:none}
+    .back{margin-top:var(--s6)}
+  </style>
+</Base>

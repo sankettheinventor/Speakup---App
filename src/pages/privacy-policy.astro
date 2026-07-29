@@ -1,0 +1,81 @@
+---
+import Base from '../layouts/Base.astro';
+const title = 'Privacy Policy — SnapJar';
+const description = 'SnapJar processes everything on your device. We do not collect, store, or transmit your files or personal data.';
+const updated = 'July 2026';
+---
+<Base title={title} description={description}>
+  <main>
+    <div class="wrap doc-page">
+      <p class="doc-kicker">Legal</p>
+      <h1 class="doc-h1">Privacy Policy</h1>
+      <p class="doc-updated">Last updated: {updated}</p>
+
+      <div class="doc-tldr">
+        <b>The short version:</b> SnapJar does everything <b>on your device</b>. We have no accounts and no servers for your content — your files, scans and PDFs <b>never leave your phone</b>, and we don't collect, store or sell your personal data. The app is free, supported by ads that <b>never see your documents</b>.
+      </div>
+
+      <h2 class="doc-h2">What we don't collect</h2>
+      <p>We don't ask you to sign up and we don't have a login. We do <b>not</b> collect your name, email, phone number, contacts, precise location, or the contents of your files, photos, scans or PDFs. None of that is ever uploaded to us — there is simply no SnapJar server that receives it.</p>
+
+      <h2 class="doc-h2">What stays on your device</h2>
+      <p>Everything you create in SnapJar — opened documents, your <b>Recent files</b>, <b>Highlights</b> and notes — is saved <b>only on your device</b>, in the app's private storage. We can't see it, and it isn't backed up to us. If you delete a file in the app, or uninstall SnapJar, that data is gone.</p>
+
+      <h2 class="doc-h2">Processing happens locally</h2>
+      <p>PDF editing, image conversion, OCR (text scanning), QR reading, calculators and every other tool run entirely on your phone using on-device software. Your documents are never sent anywhere to be processed.</p>
+
+      <h2 class="doc-h2">Advertising</h2>
+      <p>SnapJar is free because we show ads through <b>Google AdMob</b>. To show and measure ads, Google may use your device's <b>Advertising ID</b> and standard ad signals under <a href="https://policies.google.com/privacy" rel="noopener">Google's Privacy Policy</a>. This is the only identifier associated with advertising — and <b>ads never have access to your files or documents</b>. You can reset or limit your Advertising ID in your device's settings at any time. Where the law requires it (for example in the EEA, UK and California), we ask for your consent first and you can change or withdraw it whenever you like.</p>
+
+      <h2 class="doc-h2">Opening a PDF or article from a link</h2>
+      <p>If you paste a link into SnapJar — or share one to it — SnapJar has to <b>contact that website</b> to fetch it. This applies both to PDF links (downloaded and opened) and to article links (fetched so the text can be read aloud). We want to be straightforward that this is the one feature where the app reaches out to the internet for content: that website will see the request, including your IP address, exactly as it would if you had opened the link in your browser.</p>
+      <p>What does <b>not</b> happen: the file or page comes <b>straight to your phone</b> and never passes through any SnapJar server — we have none. We don't see the link, the content, or that you opened it. Nothing about your existing documents is sent anywhere, and what you open is treated like any other file on your device: private to you. If you never use this feature, SnapJar makes no content requests at all.</p>
+      <p>If you choose <b>Open the page</b> instead of having it read aloud, SnapJar shows the website in a secure <b>Chrome Custom Tab</b> — the same browser engine your phone already uses. While you're on that page you are <b>browsing that website, not SnapJar</b>: it can set its own cookies and see your activity under <b>its</b> privacy policy, exactly as in your normal browser. SnapJar can't read what's on the page, what you type into it, or where you go next. Anything you download from it lands on your device as usual.</p>
+
+      <h2 class="doc-h2">Crash notes stay on your device</h2>
+      <p>When something goes wrong, SnapJar keeps a short technical note about the recent error — the line of code that failed and the sequence that led to it — in the app's <b>private storage on your device</b>. <b>This is never sent anywhere automatically.</b> There is no crash-reporting service and no server receiving it.</p>
+      <p>You are in control of it: from <b>Help</b> you can read the note, clear it, or <b>choose</b> to email it to us if you want to report a problem. Only then does any of it leave your phone, and only because you sent it. That note never contains your documents or their contents, your file names, your highlights or notes, your name, email or contacts, or your location.</p>
+      <p><b>No analytics.</b> SnapJar does <b>not</b> track which screens you visit, which tools you use, how long you stay, or anything else about how you use the app.</p>
+
+      <h2 class="doc-h2">Read-aloud and background playback</h2>
+      <p>Read-aloud is spoken by your <b>device's own text-to-speech engine</b> (for example Google Speech Services) — SnapJar sends the text of the page you're listening to that engine on your phone, never to us. If you pick a voice that needs a connection, that engine may process the text online under its own provider's privacy policy; the voices we recommend and install are <b>offline</b> ones. When you leave the app or press Back while listening, playback continues in the background and SnapJar shows a <b>playback notification</b> (book title, progress, Pause/Stop) so it's always clear that reading is running. Stopping it there ends the session immediately.</p>
+
+      <h2 class="doc-h2">Permissions we use</h2>
+      <ul class="doc-list">
+        <li><b>Camera</b> — only when you choose to scan a document, QR or text; images are processed on-device.</li>
+        <li><b>Internet</b> — used only for ads and, if you choose, to download extra offline voices for read-aloud. The tools themselves work offline.</li>
+        <li><b>Notifications</b> — to tell you when a file has been saved, and to show the playback controls while a document is being read aloud.</li>
+        <li><b>Play audio in the background</b> — so read-aloud keeps playing when you switch apps or turn off the screen. It runs only while you're listening and stops when you stop it.</li>
+      </ul>
+      <p>None of these permissions are used to track you.</p>
+
+      <h2 class="doc-h2">Your rights</h2>
+      <p>Because we don't hold your personal data, there is normally nothing for us to look up, export or erase about you. For advertising identifiers, you can withdraw consent or reset the Advertising ID from your device at any time. Under laws such as the <b>GDPR</b>, the <b>UK GDPR</b>, India's <b>DPDP Act</b> and the <b>CCPA</b>, you may still contact us with any request and we'll respond promptly.</p>
+
+      <h2 class="doc-h2">Children</h2>
+      <p>SnapJar is a general-purpose utility and is not directed at children under 13. We do not knowingly collect any personal information from children.</p>
+
+      <h2 class="doc-h2">Changes to this policy</h2>
+      <p>If we make material changes, we'll update this page and the "last updated" date above.</p>
+
+      <h2 class="doc-h2">Contact</h2>
+      <p>Questions about privacy? Email us at <a href="mailto:contact.snapjar@gmail.com">contact.snapjar@gmail.com</a> and we'll get back to you.</p>
+    </div>
+  </main>
+
+  <style is:global>
+    .doc-page{ max-width:720px; margin:0 auto; padding-top:var(--s3); padding-bottom:var(--s7); }
+    .doc-kicker{ font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--app-accent,var(--brand)); }
+    .doc-h1{ font-size:clamp(28px,8vw,36px); font-weight:800; letter-spacing:-.03em; color:var(--app-ink,var(--txt)); margin-top:6px; }
+    .doc-updated{ font-size:12.5px; color:var(--app-dim,var(--dim)); margin-top:6px; }
+    .doc-tldr{ margin:var(--s5) 0; padding:16px 18px; border-radius:16px; background:color-mix(in srgb,var(--app-accent,var(--brand)) 8%,var(--app-tile,var(--surface))); border-left:4px solid var(--app-accent,var(--brand)); font-size:14.5px; line-height:1.65; color:var(--app-ink,var(--txt)); }
+    .doc-tldr b{ font-weight:800; }
+    .doc-h2{ margin:var(--s6) 0 var(--s2); font-size:17px; font-weight:800; letter-spacing:-.01em; color:var(--app-ink,var(--txt)); }
+    .doc-page > p{ font-size:14.5px; line-height:1.72; color:var(--app-dim,var(--dim)); margin:0 0 var(--s3); }
+    .doc-page p b{ color:var(--app-ink,var(--txt)); font-weight:700; }
+    .doc-page a{ color:var(--app-accent,var(--brand)); font-weight:600; text-decoration:none; }
+    .doc-list{ margin:0 0 var(--s3); padding-left:20px; }
+    .doc-list li{ font-size:14.5px; line-height:1.7; color:var(--app-dim,var(--dim)); margin:0 0 8px; }
+    .doc-list li b{ color:var(--app-ink,var(--txt)); font-weight:700; }
+  </style>
+</Base>

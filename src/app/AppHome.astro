@@ -1,0 +1,108 @@
+---
+/* SnapJar APP home (app build only). Premium CRED-style: search + Popular row +
+   category grids of real 3D icons (Microsoft Fluent, bundled in /assets/icons),
+   with multiple ad slots. Tools link to the SHARED tool pages. */
+const popular = [
+  { ic: 'open_book',       l: 'PDF Reader',  h: '/tools/pdf-studio?open=1' },
+  { ic: 'memo',            l: 'Write / Note',h: '/tools/pdf-studio?new=1' },
+  { ic: 'camera',          l: 'Scan',        h: '/tools/scanner' },
+  { ic: 'musical_note',    l: 'Listen',      h: '/tools/pdf-studio?open=1' },
+  { ic: 'bookmark_tabs',   l: 'Merge PDF',   h: '/tools/pdf-tools' },
+  { ic: 'clamp',           l: 'Compress PDF',h: '/tools/compress-pdf' },
+  { ic: 'framed_picture',  l: 'JPG → PDF',   h: '/tools/jpg-to-pdf' },
+  { ic: 'page_facing_up',  l: 'PDF → JPG',   h: '/tools/pdf-to-jpg' },
+];
+const sections = [
+  { id: 'scan-read', h: 'Scan & Read', items: [
+    { ic: 'camera',                        l: 'Scan Doc',   h: '/tools/scanner' },
+    { ic: 'input_symbols',                 l: 'Scan QR',    h: '/tools/qr-scan' },
+    { ic: 'magnifying_glass_tilted_left',  l: 'Scan Text',  h: '/tools/text-scan' },
+    { ic: 'open_book',                     l: 'PDF Reader', h: '/tools/pdf-studio?open=1' },
+    { ic: 'musical_note',                  l: 'Listen',     h: '/tools/pdf-studio?open=1' },
+    { ic: 'memo',                          l: 'Write',      h: '/tools/pdf-studio?new=1' },
+  ]},
+  { id: 'pdf-tools', h: 'PDF Tools', items: [
+    { ic: 'bookmark_tabs',                 l: 'Merge',      h: '/tools/pdf-tools' },
+    { ic: 'clamp',                         l: 'Compress',   h: '/tools/compress-pdf' },
+    { ic: 'card_index_dividers',           l: 'Organize',   h: '/tools/organize-pdf' },
+    { ic: 'scissors',                      l: 'Split',      h: '/tools/split-pdf' },
+    { ic: 'wastebasket',                   l: 'Remove',     h: '/tools/remove-pages' },
+    { ic: 'outbox_tray',                   l: 'Extract',    h: '/tools/extract-pages' },
+    { ic: 'counterclockwise_arrows_button',l: 'Rotate',     h: '/tools/rotate-pdf' },
+    { ic: 'input_numbers',                 l: 'Numbers',    h: '/tools/add-page-numbers' },
+    { ic: 'droplet',                       l: 'Watermark',  h: '/tools/watermark-pdf' },
+  ]},
+  { id: 'create-convert', h: 'Create & Convert', items: [
+    { ic: 'framed_picture',                l: 'JPG → PDF',  h: '/tools/jpg-to-pdf' },
+    { ic: 'page_facing_up',                l: 'PDF → JPG',  h: '/tools/pdf-to-jpg' },
+    { ic: 'memo',                          l: 'Text → PDF', h: '/tools/text-to-pdf' },
+    { ic: 'bookmark_tabs',                 l: 'Word → PDF', h: '/tools/word-to-pdf' },
+    { ic: 'memo',                          l: 'PDF → Word', h: '/tools/pdf-to-word' },
+  ]},
+];
+const adAfter = { 0: true, 2: true }; // ad slots after Scan&Read and after Create&Convert (plus one after Popular)
+---
+<div class="apphome">
+  <header class="apphero">
+    <h1>Your tools, all private</h1>
+    <p class="apphero-sub">No signup · No payment · 100% free</p>
+    <div class="apphero-row">
+      <span class="app-priv">🔒 100% on-device</span>
+      <button class="app-info" id="appInfo" type="button" aria-label="Why is SnapJar free?">i</button>
+    </div>
+  </header>
+
+  <section class="app-sec">
+    <div class="app-sec-h" role="heading" aria-level="2">Popular</div>
+    <div class="app-grid">
+      {popular.map((t) => (
+        <a class="atile" href={t.h} data-l={t.l.toLowerCase()}><span class="atile-ic"><img src={`/assets/icons/${t.ic}.png`} alt="" loading="lazy" /></span><span class="atile-l">{t.l}</span></a>
+      ))}
+    </div>
+  </section>
+
+  <div class="app-ad"></div>
+
+  {sections.map((s, idx) => (
+    <Fragment>
+      <section class="app-sec" id={s.id}>
+        <div class="app-sec-h" role="heading" aria-level="2">{s.h}</div>
+        <div class="app-grid">
+          {s.items.map((t) => (
+            <a class="atile" href={t.h} data-l={t.l.toLowerCase()}><span class="atile-ic"><img src={`/assets/icons/${t.ic}.png`} alt="" loading="lazy" /></span><span class="atile-l">{t.l}</span></a>
+          ))}
+        </div>
+      </section>
+      {adAfter[idx] && <div class="app-ad"></div>}
+    </Fragment>
+  ))}
+
+  <a class="app-settings" href="/settings" aria-label="Settings">
+    <span class="as-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
+    <span class="as-tx"><b>Settings</b><small>Help, feedback, privacy &amp; licenses</small></span>
+    <span class="as-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+  </a>
+</div>
+
+<!-- Why-free info sheet -->
+<div class="app-modal" id="appWhy" hidden>
+  <div class="app-modal-card" role="dialog" aria-modal="true" aria-label="Why SnapJar is free">
+    <div class="amc-ic">💜</div>
+    <h3>Free, forever — here's how</h3>
+    <p>SnapJar has <b>no signup</b> and <b>no payment</b>. We show clearly-labeled ads to make sure the app stays <b>completely free for you, forever</b>.</p>
+    <p>Your files never leave your device — <b>ads never see your documents</b>.</p>
+    <div class="amc-links"><a href="/privacy-policy">Privacy Policy</a><span>·</span><a href="/licenses">Open-source licenses</a></div>
+    <button class="amc-close" id="appWhyClose" type="button">Got it</button>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    var modal = document.getElementById('appWhy'), btn = document.getElementById('appInfo'), close = document.getElementById('appWhyClose');
+    function shut(){ if (modal) modal.hidden = true; if (btn) try { btn.focus(); } catch (e) {} }
+    if (btn) btn.addEventListener('click', function () { if (modal){ modal.hidden = false; try { close.focus(); } catch (e) {} } });
+    if (close) close.addEventListener('click', shut);
+    if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) shut(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal && !modal.hidden) shut(); });
+  })();
+</script>

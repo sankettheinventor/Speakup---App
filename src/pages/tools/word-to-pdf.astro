@@ -1,0 +1,119 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Word to PDF — Convert DOCX to PDF Free (Private, In-Browser)';
+const description = 'Free Word to PDF converter. Turn a .docx document into a clean PDF right in your browser — headings, lists, tables and images preserved. Nothing is uploaded.';
+const faqItems = [
+  { q: 'How do I convert a Word document to PDF?', a: 'Drop or browse to a .docx file. It is read and laid out in your browser, you see a live preview, then you click Download PDF to save a paginated PDF — no upload, no signup.' },
+  { q: 'Does it keep my formatting?', a: 'It preserves the document structure — headings, bold/italic, lists, tables, links and embedded images. Exact page layout, custom fonts and advanced Word features may differ slightly because the conversion runs entirely on your device.' },
+  { q: 'Can it open old .doc files?', a: 'No. Only the modern .docx format is supported. If you have an old .doc file, open it in Word or Google Docs and use Save As / Download as .docx, then convert it here.' },
+  { q: 'Is my document uploaded anywhere?', a: 'No. The whole conversion happens locally in your browser using JavaScript. Your document is never uploaded, stored or shared — it stays on your device.' },
+  { q: 'Is the text in the PDF selectable?', a: 'The PDF is rendered for faithful visual layout, so text is captured as part of the page image. If you need fully selectable text, keep the original .docx alongside the PDF.' },
+];
+const howSteps = [
+  { name: 'Add your Word file', text: 'Drop a .docx onto the box or click browse to pick one from your device.' },
+  { name: 'Check the preview', text: 'The document is converted and shown as a live preview so you can confirm it looks right.' },
+  { name: 'Download the PDF', text: 'Click Download PDF to generate a clean, multi-page PDF and save it to your device.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">Document Tool</p><h1>Word to PDF</h1>
+    <p>Drop in a Word .docx and download a clean, paginated PDF — headings, lists, tables and images preserved, right here in your browser.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden />
+      <div class="drop-ic">📝</div><p class="drop-t">Drop a Word .docx, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">Only .docx · headings, lists, tables &amp; images kept · 🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Download PDF</button>
+        <button id="reset" class="wm-btn ghost">New file</button></div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <div class="preview-wrap"><div id="preview" class="preview"></div></div>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>Convert Word (.docx) to PDF, privately</h2>
+    <p>Need to send a Word document as a PDF? Drop your .docx here and download a tidy, multi-page PDF with your headings, bold and italic text, bullet and numbered lists, tables and embedded images preserved. Everything is converted locally in your browser, so your document is never uploaded — ideal for contracts, resumes, letters and reports you'd rather keep private.</p>
+    <div class="xlinks"><a href="/tools/text-to-pdf">Text to PDF →</a><a href="/tools/pdf-tools">Merge PDF →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px;word-break:break-word}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn:disabled{opacity:.5;cursor:default}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim);min-height:18px}
+    .preview-wrap{margin-top:16px;max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#f3f1f8}
+    .preview{background:#fff;color:#15131c;width:100%;max-width:720px;margin:0 auto;padding:40px 44px;font:15px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+    .preview h1,.preview h2,.preview h3{line-height:1.25;margin:1.2em 0 .5em;color:#0f0d16}
+    .preview h1{font-size:24px}.preview h2{font-size:20px}.preview h3{font-size:17px}
+    .preview p{margin:0 0 .8em}.preview ul,.preview ol{margin:0 0 .8em;padding-left:1.5em}
+    .preview img{max-width:100%;height:auto}
+    .preview table{border-collapse:collapse;width:100%;margin:0 0 1em}
+    .preview td,.preview th{border:1px solid #cfcad9;padding:6px 9px;text-align:left;vertical-align:top}
+    .preview a{color:#5b5bd6}
+  </style>
+  <HowTo task="convert a Word document to PDF" steps={howSteps} />
+  <AppLd name="Word to PDF Converter" description="Drop a .docx Word document, preview the converted layout, then download a clean multi-page PDF in your browser. Headings, lists, tables and images are preserved and nothing is uploaded." category="BusinessApplication" features={["Drag-and-drop or browse .docx upload","Live preview before download","Preserves headings, lists, tables and images","Multi-page A4 PDF output","100% in-browser, nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as mammothNS from 'mammoth/mammoth.browser.js';
+    import { jsPDF } from 'jspdf';
+    var mammoth = mammothNS.default || mammothNS;
+    (function(){
+      var html='', srcName='document', busy=false;
+      function $(i){return document.getElementById(i);}
+      function status(m,kind){ var el=$('status'); el.textContent=m||''; el.style.color = kind==='err'?'var(--err,#e5484d)':(kind==='ok'?'var(--ok,#2bb673)':'var(--dim)'); if(window.SnapJarKit&&m&&kind) window.SnapJarKit.toast(m, kind==='err'?'err':kind==='ok'?'ok':'info'); }
+      function setReady(ok){ $('go').disabled=!ok; }
+      async function load(f){
+        $('drop').hidden=true; $('editor').hidden=false; html=''; setReady(false); $('preview').innerHTML='';
+        $('info').textContent=f.name;
+        if(/\.doc$/i.test(f.name) && !/\.docx$/i.test(f.name)){ status('Old .doc files aren’t supported — open it in Word or Google Docs and save as .docx, then try again.','err'); return; }
+        if(!/\.docx$/i.test(f.name)){ status('Please choose a Word .docx file.','err'); return; }
+        if(f.size>40*1024*1024){ status('That file is very large — conversion may take a moment…','info'); }
+        status('Converting your document…');
+        try{
+          var ab=await f.arrayBuffer();
+          var res=await mammoth.convertToHtml({arrayBuffer:ab});
+          html=(res && res.value || '').trim();
+          if(!html){ status('This document looks empty — there’s nothing to convert.','err'); return; }
+          srcName=(f.name.replace(/\.docx$/i,'')||'document');
+          $('preview').innerHTML=(window.SnapJarKit&&window.SnapJarKit.sanitizeHtml)?window.SnapJarKit.sanitizeHtml(html):'';  // SECURITY: .docx HTML is untrusted; fail closed if sanitizer is unavailable
+          setReady(true);
+          status('Ready — check the preview, then Download PDF.','ok');
+        }catch(err){
+          status('Could not read this Word file — it may be corrupt or not a real .docx.','err');
+        }
+      }
+      function makePdf(){
+        if(!html||busy) return; busy=true;
+        status('Building your PDF…');
+        try{
+          var doc=new jsPDF({unit:'pt',format:'a4'});
+          doc.html($('preview'),{
+            callback:function(d){
+              try{ d.save(srcName+'.pdf'); status('Done — your PDF is ready.','ok'); }
+              catch(e){ status('Could not save the PDF — please try again.','err'); }
+              busy=false;
+            },
+            margin:[40,40,54,40], autoPaging:'text', width:515, windowWidth:760,
+            html2canvas:{ scale:2, useCORS:true, backgroundColor:'#ffffff' }
+          });
+        }catch(err){ busy=false; status('Could not create the PDF — please try a simpler document.','err'); }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit?window.SnapJarKit.guard('go',makePdf):makePdf;
+      $('reset').onclick=function(){html='';$('file').value='';$('preview').innerHTML='';status('');$('editor').hidden=true;$('drop').hidden=false;};
+      setReady(false);
+    })();
+  </script>
+</Base>

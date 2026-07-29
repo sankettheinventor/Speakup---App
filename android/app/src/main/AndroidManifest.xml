@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        tools:replace="android:allowBackup,android:fullBackupContent"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <!-- AdMob app ID (real, SnapJar) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4351869860119610~1913364388" />
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Share-target: let other apps send a single image or PDF TO SnapJar.
+                 TODO(runtime): handle the incoming ACTION_SEND intent in MainActivity /
+                 the WebView bridge and route the file to the right tool (file 16 §2.2). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+                <!-- Shared TEXT → read it aloud. Select an article in a browser, Share → SnapJar,
+                     and it reads it on the commute. Deliberately SEND-only (never VIEW), so we
+                     don't appear in the chooser for every .txt file we can't usefully open. -->
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- Share-target: multiple images/PDFs at once (e.g. batch compress / images→PDF). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+
+            <!-- OPEN-WITH: make SnapJar appear in the chooser when a user taps a PDF.
+                 TODO(runtime): read the incoming VIEW intent's uri and load it in PDF Studio. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <!-- content:// ONLY. Accepting file:// let any app hand us a path we then read
+                     with OUR uid (confused deputy — e.g. our own /data/data files). Real file
+                     managers and share sheets all use content:// via FileProvider. -->
+                <data android:scheme="content" android:mimeType="application/pdf" />
+            </intent-filter>
+            <!-- OPEN-WITH: images (for the image tools). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="image/*" />   <!-- content:// only; see note above -->
+
+            </intent-filter>
+            <!-- OPEN-WITH: only the office types the doc viewer actually RENDERS (docx via mammoth,
+                 xls/xlsx via SheetJS, pptx via pptx-preview, csv). Legacy .doc/.ppt (only a "convert
+                 it" message) and the over-broad text/plain are intentionally NOT claimed, so SnapJar
+                 doesn't appear in the chooser for files it can't really open. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:scheme="content" android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:scheme="content" android:mimeType="application/vnd.ms-excel" />
+                <data android:scheme="content" android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:scheme="content" android:mimeType="text/csv" />
+                <data android:scheme="content" android:mimeType="text/comma-separated-values" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- Background read-aloud: keeps reading the book after the user leaves the app.
+             foregroundServiceType=mediaPlayback → exempt from the cached-process freezer so
+             the native TTS engine keeps advancing sentence-by-sentence with the screen off. -->
+        <service
+            android:name=".TtsService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- AdMob: advertising ID (required for AdMob on Android 13+). The play-services-ads SDK
+         also declares this, but we keep it explicit. Remove ONLY if you target children. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    <!-- Post a notification when a file is saved (tap → open it in SnapJar). Runtime-requested on Android 13+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Background read-aloud: a foreground media-playback service keeps reading the book
+         after the user switches apps (mediaPlayback type is the Play-declared use). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Camera for the document Scanner (ML Kit). Camera is optional hardware so the
+         app still installs on camera-less devices. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Light haptic feedback on key actions (premium tactile feel). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+</manifest>

@@ -1,0 +1,31 @@
+---
+// Reusable HowTo: visible numbered steps + HowTo JSON-LD from the same data.
+// AEO value (AI Overviews / ChatGPT / Perplexity extract ordered steps).
+// Usage:  import HowTo from '../../components/HowTo.astro'
+//   const howSteps = [{ name: 'Upload', text: '...' }, ...]
+//   <HowTo task="add a watermark to a photo" steps={howSteps} />
+const { task = '', steps = [], intro = '' } = Astro.props;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: task ? `How to ${task}` : 'How to use this tool',
+  step: steps.map((s, i) => ({
+    '@type': 'HowToStep',
+    position: i + 1,
+    name: s.name,
+    text: s.text,
+  })),
+};
+---
+{steps.length > 0 && (
+  <section class="howto" aria-label="Step-by-step guide">
+    <h2>How to {task}</h2>
+    {intro && <p class="howto-intro">{intro}</p>}
+    <ol class="howto-steps">
+      {steps.map((s) => (
+        <li><b>{s.name}.</b> <span set:html={s.text} /></li>
+      ))}
+    </ol>
+    <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  </section>
+)}

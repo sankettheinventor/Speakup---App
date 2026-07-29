@@ -1,0 +1,23 @@
+---
+// SoftwareApplication JSON-LD — positions each tool as an interactive APPLICATION
+// (the thing you go *use*), so AI Overviews cite it as the place to do the task
+// rather than just resolving the answer inline. The zero-click counter-move.
+const { name, description, category = 'UtilitiesApplication', features = [] } = Astro.props;
+const SITE = Astro.site ?? new URL('https://snapjar.sankettoraskar-business.workers.dev/');
+const url = new URL(Astro.url.pathname, SITE).href;
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name,
+  description,
+  url,
+  applicationCategory: category,
+  operatingSystem: 'Any — runs in a web browser',
+  browserRequirements: 'Requires JavaScript',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  publisher: { '@type': 'Organization', name: 'SnapJar', url: SITE.href },
+  ...(features.length ? { featureList: features } : {}),
+};
+---
+<script type="application/ld+json" set:html={JSON.stringify(ld)} />

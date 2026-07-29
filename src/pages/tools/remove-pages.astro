@@ -1,0 +1,92 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Remove Pages from PDF — Delete PDF Pages Free';
+const description = 'Free tool to remove pages from a PDF. Enter the pages to delete (e.g. 2, 5-7) and download the trimmed PDF — in your browser, nothing uploaded.';
+const faqItems = [
+  { q: 'How do I select which pages to remove?', a: 'Type the page numbers in the box, separating individual pages with commas and using a dash for ranges — for example, 2, 5-7 removes page 2 plus pages 5 through 7.' },
+  { q: 'Can I remove a range of pages at once?', a: 'Yes. Use a dash to delete a continuous range, like 5-7, and combine it with single pages such as 2, 5-7. Only pages that exist in your PDF are removed.' },
+  { q: 'Is my PDF uploaded or stored anywhere?', a: 'No. The entire process runs locally in your browser using JavaScript, so your PDF is never uploaded, stored, or shared. Nothing leaves your device.' },
+  { q: 'Does it work on password-protected or encrypted PDFs?', a: 'It attempts to open encrypted PDFs by ignoring encryption, so many files will work, but PDFs requiring a password to view may not load correctly.' },
+  { q: 'What happens if I try to remove every page?', a: 'The tool blocks that and shows a message, because a PDF must keep at least one page. Remove fewer pages so something remains in the file.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the drop zone or click browse to select a file from your device.' },
+  { name: 'Enter pages to remove', text: 'Type the pages you want gone in the "Pages to remove" box, using commas and dashes like 2, 5-7.' },
+  { name: 'Remove and download', text: 'Click "Remove & download" to delete those pages and save the trimmed PDF, which is processed entirely in your browser.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">PDF Tool</p><h1>Remove Pages from PDF</h1>
+    <p>Drop in your PDF, type the pages to delete, and download the trimmed file — right here in your browser.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">📄</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <label class="ctl">Pages to remove<input id="pages" type="text" placeholder="e.g. 2, 5-7" /></label>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Remove &amp; download</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status"></p>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How to remove PDF pages</h2>
+    <p>Drop in a PDF, type the pages you want gone — single pages and ranges both work, like <code>2, 5-7</code> — and download the trimmed file. Handy for stripping out blank scans, cover sheets or pages you don't want to share. It runs entirely in your browser; your document is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/extract-pages">Extract Pages →</a><a href="/tools/split-pdf">Split PDF →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px}
+    .ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:14px;max-width:280px}
+    .ctl input{background:var(--surface2);border:1px solid var(--line);border-radius:9px;color:var(--txt);font:inherit;font-weight:600;padding:10px 11px;outline:none}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim)}
+    code{background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.9em}
+  </style>
+  <HowTo task="remove pages from a PDF" steps={howSteps} />
+  <AppLd name="Remove Pages from PDF" description="Drop in a PDF, type the page numbers and ranges you want gone, then click to delete them and download the trimmed file — all in your browser." category="BusinessApplication" features={["Drag-and-drop or browse to load a PDF", "Delete single pages and ranges like 2, 5-7", "Live page count shown for your file", "One-click trim and download", "Runs fully client-side, nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as PDFLib from 'pdf-lib';
+    (function(){
+      var bytes=null,count=0,srcName='document';
+      function $(i){return document.getElementById(i);}
+      function parse(str,max){var s=new Set();(str||'').split(',').forEach(function(p){p=p.trim();if(!p)return;if(p.indexOf('-')>=0){var r=p.split('-'),a=parseInt(r[0],10),b=parseInt(r[1],10);if(isNaN(a)||isNaN(b))return;if(a>b){var t=a;a=b;b=t;}for(var i=a;i<=b;i++)if(i>=1&&i<=max)s.add(i);}else{var n=parseInt(p,10);if(n>=1&&n<=max)s.add(n);}});return s;}
+      async function load(f){
+        $('drop').hidden=true;$('editor').hidden=false;
+        try{
+          bytes=await f.arrayBuffer();srcName=(f.name.replace(/\.[^.]+$/,'')||'document');var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});count=doc.getPageCount();$('info').textContent=f.name+' · '+count+' pages';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      async function go(){
+        if(!bytes)return;var rm=parse($('pages').value,count);if(!rm.size){$('status').textContent='Enter pages to remove.';return;}
+        if(rm.size>=count){$('status').textContent='That would remove every page.';return;}
+        $('status').textContent='Working…';
+        try{
+          var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});
+          var idx=[];for(var i=count;i>=1;i--)if(rm.has(i))doc.removePage(i-1);
+          var out=await doc.save();var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));a.download=srcName+'-trimmed.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+          $('status').textContent='Done — removed '+rm.size+' page(s).';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit.guard('go',go);$('reset').onclick=function(){bytes=null;$('file').value='';$('pages').value='';$('status').textContent='';$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

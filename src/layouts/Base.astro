@@ -1,0 +1,1846 @@
+---
+import BottomNav from '../app/BottomNav.astro';
+const {
+  title = 'SnapJar — Free Online Calculators & Image Tools',
+  description = 'Free, fast, private online tools. Calculators and image utilities that run entirely in your browser — no signup, no upload, your data never leaves your device.',
+} = Astro.props;
+const SITE = Astro.site ?? new URL('https://snapjar.sankettoraskar-business.workers.dev/');
+const canonical = new URL(Astro.url.pathname, SITE).href;
+const ogImage = new URL('/og.png', SITE).href;
+const isHome = Astro.url.pathname === '/';
+
+// Sitewide structured data: Organization + WebSite (helps Google understand the
+// brand + enables sitelinks search box). Emitted once per page in the head.
+const orgLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'SnapJar',
+  url: SITE.href,
+  logo: new URL('/icon-512.png', SITE).href,
+};
+const siteLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'SnapJar',
+  url: SITE.href,
+  description: 'Free online calculators and image tools that run entirely in your browser.',
+};
+
+// ===== AdSense: paste your publisher ID here once approved (e.g. ca-pub-1234567890123456)
+// Leaving it empty keeps ads OFF site-wide (placeholders show instead). Hybrid model:
+// this enables Google Auto Ads (ML placement); manual <AdSlot/> components add controlled spots.
+const ADSENSE_CLIENT = '';
+
+// ===== App build flag. Set PUBLIC_APP_BUILD=1 when building the bundle that ships
+// inside the Capacitor (SnapJar mobile) app, e.g. `PUBLIC_APP_BUILD=1 npm run build`.
+// In the app we strip everything that (a) reaches the network — so "your data never
+// leaves your device" is literally true — or (b) would risk a Play/App Store rejection
+// (the external video-downloader link, file 16 Rule #2). The plain web build is unchanged.
+const IS_APP = import.meta.env.PUBLIC_APP_BUILD === '1';
+// In the app, internal /tools/x and /calculators/x links must hit the real .html file —
+// Capacitor's WebView serves exact files, and extensionless/dir paths fall back to the
+// home. Intercept link clicks and append .html. The web build (pretty URLs) is untouched.
+const APP_LINK_FIX = `(function(){document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a)return;var h=a.getAttribute('href')||'';var m=h.match(/^(\\/(?:tools|calculators)\\/[a-z0-9-]+|\\/recent|\\/highlights|\\/licenses|\\/privacy-policy|\\/terms|\\/settings|\\/help)([?#].*)?$/);if(m){e.preventDefault();location.href=m[1]+'.html'+(m[2]||'');}},true);})();`;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  {IS_APP && (
+    /* APP-ONLY Content-Security-Policy. The packaged app makes NO remote requests — every tool
+       runs on-device and ads are drawn by the native AdMob view, not the WebView. So we can lock
+       connect-src down to local schemes: even if a malicious document ever managed to run script
+       in this origin, it has nowhere to send the user's files. 'wasm-unsafe-eval' is required by
+       pdf.js / tesseract WebAssembly; 'unsafe-inline' by Astro's inline hydration scripts. Note
+       this is deliberately NOT emitted on the web build, which does load third-party CDNs. */
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' data: blob:; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+  )}
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:site_name" content="SnapJar" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="SnapJar — free online calculators & image tools" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
+  <meta name="theme-color" content="#5b54e6" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="stylesheet" href="/assets/style.css" />
+  {IS_APP && <link rel="stylesheet" href="/assets/app.css" />}
+  <script type="application/ld+json" set:html={JSON.stringify(orgLd)} />
+  {isHome && <script type="application/ld+json" set:html={JSON.stringify(siteLd)} />}
+  {!IS_APP && <script is:inline defer src="/assets/cloud-import.js"></script>}
+  <script is:inline>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) t = 'light';   // default to the premium white theme on first open; the toggle still persists the user's choice
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <script is:inline>
+    /* ===== SnapJarKit — shared robustness toolkit (ONE source of truth) =====
+       Loaded before every tool. Closes the recurring root-cause bugs (canvas OOM,
+       frozen-on-bad-input, double-submit, blob leaks) so tools call helpers instead
+       of each re-implementing (and re-breaking) them. Plain global so BOTH inline and
+       bundled tool scripts can use it. */
+    (function () {
+      var MAX_SIDE = 4096, MAX_AREA = 16777216; // GPU-safe ceiling for budget Android WebViews
+      var K = {
+        MAX_SIDE: MAX_SIDE, MAX_AREA: MAX_AREA,
+        /* Scale (w,h) down to a canvas a budget phone can actually allocate.
+           Returns {w,h,scale,clamped}; scale=1 when no clamp needed (the common case). */
+        fitDims: function (w, h) {
+          w = Math.max(1, w | 0); h = Math.max(1, h | 0);
+          var s = 1;
+          if (w > MAX_SIDE || h > MAX_SIDE) s = Math.min(MAX_SIDE / w, MAX_SIDE / h);
+          if (w * s * (h * s) > MAX_AREA) s = Math.min(s, Math.sqrt(MAX_AREA / (w * h)));
+          return { w: Math.max(1, Math.floor(w * s)), h: Math.max(1, Math.floor(h * s)), scale: s, clamped: s < 1 };
+        },
+        /* Load an image with onerror + a timeout so a corrupt/huge file can NEVER hang
+           the UI forever. Resolves an HTMLImageElement, rejects on error/timeout. */
+        loadImage: function (src, timeoutMs) {
+          return new Promise(function (resolve, reject) {
+            var img = new Image(), done = false;
+            var t = setTimeout(function () { if (!done) { done = true; img.src = ''; reject(new Error('Image load timed out')); } }, timeoutMs || 20000);
+            img.onload = function () { if (!done) { done = true; clearTimeout(t); resolve(img); } };
+            img.onerror = function () { if (!done) { done = true; clearTimeout(t); reject(new Error('Could not load this image — it may be corrupt or unsupported.')); } };
+            img.src = src;
+          });
+        },
+        /* Wrap an (async) action so it can't run twice at once: disables the button for
+           the duration (kills double-submit + concurrent-op corruption). onErr(e) optional. */
+        guard: function (btn, fn, onErr) {
+          return function (ev) {
+            var b = typeof btn === 'string' ? document.getElementById(btn) : btn;
+            if (b && b.disabled) return;
+            if (b) b.disabled = true;
+            var self = this, args = arguments;
+            Promise.resolve().then(function () { return fn.apply(self, args); })
+              .catch(function (e) { try { (onErr || function (x) { console.error(x); })(e); } catch (_) {} })
+              .then(function () { if (b) b.disabled = false; });
+          };
+        },
+        /* Yield to the UI thread inside long loops so the page never looks frozen
+           (and the GC can run between heavy pages). await SnapJarKit.breathe(). */
+        breathe: function () { return new Promise(function (r) { setTimeout(r, 0); }); },
+        /* Copy text that NEVER throws: tries the async clipboard, falls back to a
+           hidden textarea + execCommand (older/locked-down WebViews). Resolves bool. */
+        copy: function (text, label) {
+          return new Promise(function (res) {
+            function done(ok) { K.toast(ok ? (label || 'Copied to clipboard') : 'Couldn’t copy — try long-pressing to copy', ok ? 'ok' : 'err'); res(ok); }
+            function fallback() { try { var ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.focus(); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta); done(ok); } catch (e) { done(false); } }
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { done(true); }, fallback); }
+              else fallback();
+            } catch (e) { fallback(); }
+          });
+        },
+        /* Resolve a Capacitor plugin across runtime variants: the native bridge exposes
+           Capacitor.Plugins.X, while @capacitor/core exposes registerPlugin(). Returns
+           the plugin object or null (web). One source of truth so tools stop guessing. */
+        plugin: function (name) {
+          var C = window.Capacitor; if (!C) return null;
+          if (C.Plugins && C.Plugins[name]) return C.Plugins[name];
+          if (typeof C.registerPlugin === 'function') { try { return C.registerPlugin(name); } catch (e) {} }
+          return null;
+        },
+        /* Object-URL helpers: track() URLs for thumbnails and clear() them on reset
+           so batch tools stop leaking decoded bitmaps for the whole session. */
+        _urls: [],
+        track: function (blob) { var u = URL.createObjectURL(blob); K._urls.push(u); return u; },
+        clear: function () { K._urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} }); K._urls = []; },
+
+        /* ===== Messaging — ONE premium voice for every tool =====
+           Consistent toasts, classified status states (working/done/error) and a
+           styled prompt, so no tool re-invents (or ships an ugly system dialog). */
+        _toastHost: null,
+        _icon: function (type) {
+          if (type === 'ok') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+          if (type === 'err') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7v7"/><circle cx="12" cy="17.5" r="1.2" fill="currentColor" stroke="none"/></svg>';
+          if (type === 'work') return '<span class="sj-spin"></span>';
+          return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 11v6"/><circle cx="12" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>';
+        },
+        /* Transient floating confirmation. type: ok|err|work|info. Returns the node. */
+        toast: function (msg, type, ms) {
+          type = type || 'info';
+          var host = K._toastHost;
+          if (!host || !host.isConnected) { host = document.createElement('div'); host.className = 'sj-toasts'; host.setAttribute('role', 'status'); host.setAttribute('aria-live', 'polite'); (document.body || document.documentElement).appendChild(host); K._toastHost = host; }
+          function dismiss(el){ if (el._t) clearTimeout(el._t); el.classList.add('out'); setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 280); }
+          function schedule(el, d){ if (el._t) clearTimeout(el._t); el._t = setTimeout(function () { dismiss(el); }, d); }
+          var dur = ms || (type === 'err' ? 4200 : 2600);
+          var live = host.querySelectorAll('.sj-toast:not(.out)');
+          // de-dupe: an identical message already showing → just refresh its timer (no stacking)
+          for (var i = 0; i < live.length; i++) { var lm = live[i].querySelector('.sj-tmsg'); if (lm && lm.textContent === msg) { schedule(live[i], dur); return live[i]; } }
+          // cap the stack at 3 — retire the oldest so toasts never wall off the screen
+          for (var j = 0; j <= live.length - 3; j++) dismiss(live[j]);
+          var t = document.createElement('div'); t.className = 'sj-toast sj-' + type;
+          t.innerHTML = '<span class="sj-tic">' + K._icon(type) + '</span><span class="sj-tmsg"></span>';
+          t.lastChild.textContent = msg;
+          host.appendChild(t);
+          requestAnimationFrame(function () { t.classList.add('in'); });
+          schedule(t, dur);
+          return t;
+        },
+        /* Tactile feedback — Capacitor Haptics if present, else the Web Vibration API. */
+        haptic: function (style) {
+          try { var H = K.plugin('Haptics'); if (H && H.impact) { H.impact({ style: style === 'heavy' ? 'HEAVY' : style === 'medium' ? 'MEDIUM' : 'LIGHT' }); return; } } catch (e) {}
+          try { if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 16 : style === 'medium' ? 11 : 7); } catch (e) {}
+        },
+        /* Classify a status string into a state so colour/icon/motion match the message. */
+        classify: function (s) {
+          s = (s || '').toLowerCase();
+          if (/cannot|can.?t |could ?n.?t|could not|fail|error|unable|unsupported|corrupt|invalid|too (large|big|many)|not supported|did ?n.?t|did not|denied|problem|wrong|no matches|nothing to/.test(s)) return 'err';
+          if (/done|ready|copied|saved|success|complete|finished|downloaded|✓|✅|added|generated\b/.test(s)) return 'ok';
+          if (/…|\.\.\.|please wait|loading|working|opening|building|rendering|processing|scanning|compress|preparing|generating|optimi|converting|reading|searching|merging|splitting|extracting/.test(s)) return 'work';
+          return 'info';
+        },
+        /* Premium replacement for window.prompt(). Resolves the value or null on cancel. */
+        /* Text prompt by default. Pass opts.confirm:true for a yes/no confirm (no input,
+           OK resolves true, Cancel resolves null), opts.body for sub-text, opts.danger to
+           tint the OK button red (destructive actions). Backward compatible. */
+        ask: function (opts) {
+          opts = opts || {};
+          return new Promise(function (resolve) {
+            var ov = document.createElement('div'); ov.className = 'sj-ask';
+            var inField = opts.confirm ? '' : ('<input class="sj-ask-in" type="' + (opts.type || 'text') + '"' + (opts.min != null ? ' min="' + opts.min + '"' : '') + (opts.max != null ? ' max="' + opts.max + '"' : '') + ' />');
+            ov.innerHTML = '<div class="sj-ask-card" role="dialog" aria-modal="true"><div class="sj-ask-t"></div>' +
+              (opts.body ? '<div class="sj-ask-b"></div>' : '') + inField +
+              '<div class="sj-ask-row"><button class="sj-ask-cancel" type="button">' + (opts.cancel || 'Cancel') + '</button><button class="sj-ask-ok" type="button">' + (opts.ok || 'OK') + '</button></div></div>';
+            ov.querySelector('.sj-ask-t').textContent = opts.title || '';
+            if (opts.body) ov.querySelector('.sj-ask-b').textContent = opts.body;
+            var inp = ov.querySelector('.sj-ask-in'); if (inp) { inp.value = opts.value != null ? opts.value : ''; if (opts.placeholder) inp.placeholder = opts.placeholder; }
+            var okb = ov.querySelector('.sj-ask-ok'); if (opts.danger) { okb.style.background = '#e5484d'; okb.style.color = '#fff'; okb.style.borderColor = '#e5484d'; }
+            function close(v) { ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 220); resolve(v); }
+            okb.onclick = function () { close(opts.confirm ? true : inp.value); };
+            ov.querySelector('.sj-ask-cancel').onclick = function () { close(null); };
+            ov.addEventListener('click', function (e) { if (e.target === ov) close(null); });
+            if (inp) inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') close(inp.value); if (e.key === 'Escape') close(null); });
+            (document.body || document.documentElement).appendChild(ov);
+            requestAnimationFrame(function () { ov.classList.add('in'); if (inp) { inp.focus(); inp.select && inp.select(); } });
+          });
+        },
+        /* Auto-upgrade EVERY tool's status line: watch known status elements and, when
+           their text changes, tag a state + replay the reveal — no per-tool code. */
+        _initStatus: function () {
+          var sel = '.status,.tmsg,[data-sj-status],[role=status]';
+          function tag(el) {
+            var txt = (el.textContent || '').trim();
+            if (!txt) { el.removeAttribute('data-state'); el.classList.remove('sj-flash', 'sj-prog'); el.style.removeProperty('--sj-prog'); return; }
+            el.setAttribute('data-state', K.classify(txt));
+            if (/^[▼▲⚠✓✅❌•→➜]/.test(txt)) el.setAttribute('data-glyph', ''); else el.removeAttribute('data-glyph');
+            // §7 auto progress bar: any "X of Y" / "X%" status grows a bar — no per-tool code
+            var m = txt.match(/(\d+)\s*(?:of|\/)\s*(\d+)/) , pct = null;
+            if (m && +m[2] > 0) pct = Math.min(100, Math.round(+m[1] / +m[2] * 100));
+            else { var p = txt.match(/(\d{1,3})\s*%/); if (p) pct = Math.min(100, +p[1]); }
+            if (pct != null && K.classify(txt) === 'work') { el.style.setProperty('--sj-prog', pct + '%'); el.classList.add('sj-prog'); }
+            else { el.classList.remove('sj-prog'); el.style.removeProperty('--sj-prog'); }
+            el.classList.remove('sj-flash'); void el.offsetWidth; el.classList.add('sj-flash');
+          }
+          function watch(el) {
+            if (el._sjW) return; el._sjW = 1; tag(el);
+            new MutationObserver(function () { tag(el); }).observe(el, { childList: true, characterData: true, subtree: true });
+          }
+          function scan() { try { document.querySelectorAll(sel).forEach(watch); } catch (e) {} }
+          scan();
+          // catch status elements added later (e.g. tool builds its own)
+          try { new MutationObserver(scan).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+        },
+        /* Automatic success + heavy-file feedback for EVERY tool, no per-tool code:
+           - any download (incl. programmatic a.click()) confirms "Saved to your device"
+           - selecting a very large file warns it may take a few seconds (no UI freeze). */
+        _saveToast: function () {
+          var now = +new Date();
+          if (K._lastSave && now - K._lastSave < 1200) return;   // dedupe (delegation + click patch)
+          K._lastSave = now;
+          K.toast('Saved to your device', 'ok');
+        },
+        _isNative: function () { try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); } catch (e) { return false; } },
+        /* APP: take over a download → save to APP-PRIVATE storage AND add it to My Files (Recent),
+           so files are never "lost" and EVERY tool's output shows up in Recent — without exposing
+           the user's documents to other apps (privacy). Export leaves the device only via Share. */
+        saveDownload: function (blob, name, opts) {
+          opts = opts || {};
+          name = (name || 'file').replace(/[\\/]/g, '_');
+          var ext = (name.split('.').pop() || '').toLowerCase();
+          var kind = ext === 'pdf' ? 'pdf' : (['png','jpg','jpeg','webp','gif','heic','heif','svg','ico','bmp'].indexOf(ext) >= 0 ? 'image' : 'file');
+          // 1) add to My Files (Recent), capturing its id for the notification's tap-to-open
+          function addRecent() {
+            if (opts.skipRecent || !window.SJRecents) return Promise.resolve(null);
+            if (kind === 'image') return K._imgThumb(blob).then(function (thumb) { return window.SJRecents.add({ name: name, kind: kind, blob: blob, thumb: thumb }); });
+            return window.SJRecents.add({ name: name, kind: kind, blob: blob });
+          }
+          // 2) write to APP-PRIVATE storage (Directory.Data → /data/data/<app>/files/SnapJar) and
+          //    resolve its file uri. PRIVACY: NOT shared Documents — other apps / MediaStore / the
+          //    Files browser must never be able to read the user's documents. Files stay reachable
+          //    in-app via My Files (IndexedDB) and leave the device ONLY on an explicit Share/export.
+          function saveFile() {
+            var Fs = K.plugin('Filesystem');
+            if (!Fs || !Fs.writeFile) return Promise.resolve(null);
+            return new Promise(function (resolve) {
+              var r = new FileReader();
+              r.onload = function () {
+                var b64 = String(r.result).split(',')[1] || '';
+                Fs.writeFile({ path: 'SnapJar/' + name, data: b64, directory: 'DATA', recursive: true })
+                  .then(function () { return (Fs.getUri ? Fs.getUri({ path: 'SnapJar/' + name, directory: 'DATA' }).then(function (u) { return u && u.uri; }).catch(function () { return null; }) : null); })
+                  .then(resolve).catch(function () { resolve(null); });
+              };
+              r.onerror = function () { resolve(null); };
+              r.readAsDataURL(blob);
+            });
+          }
+          return Promise.all([addRecent().catch(function () { return null; }), saveFile()]).then(function (out) {
+            var recentId = out[0], uri = out[1];
+            K.toast('Saved to My Files — private to you', 'ok', 3600);
+            if (!opts.skipRecent) {
+              K._notifySaved(name, kind, recentId, uri);
+              /* Every converter/export in the app funnels through here, so this single hook
+                 covers all ten tools — previously CONVERSION_DONE fired from the scanner only.
+                 SJNotify self-suppresses when the app is visible, so this is silent in the
+                 normal case and only speaks up if the user stepped away. */
+              try { if (window.SJNotify) window.SJNotify.onEvent('CONVERSION_DONE', { recentId: recentId }); } catch (e) {}
+              // mark an interstitial as DUE — it shows at the user's NEXT deliberate navigation
+              // (never on a timer that could land under a tap). See maybeInterstitial.
+              K._intDue = true;
+            }
+            return { recentId: recentId, uri: uri };
+          });
+        },
+        /* Share a blob as a real file → opens the system share sheet (apps/contacts/email/cloud).
+           Web Share with files first; else write to cache and share the file URI via the Share plugin. */
+        shareFile: function (blob, name, title) {
+          name = (name || 'file').replace(/[\\/]/g, '_'); title = title || name;
+          return (async function () {
+            try {
+              var f = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+              if (navigator.canShare && navigator.canShare({ files: [f] }) && navigator.share) { await navigator.share({ files: [f], title: title }); return true; }
+            } catch (e) { if (e && e.name === 'AbortError') return true; }
+            try {
+              var Fs = K.plugin('Filesystem'), Sh = K.plugin('Share');
+              if (Fs && Fs.writeFile && Sh && Sh.share) {
+                var b64 = await new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(',')[1] || ''); }; r.onerror = rej; r.readAsDataURL(blob); });
+                var sp = 'shares/' + name;   // dedicated subdir matching the narrowed FileProvider scope
+                await Fs.writeFile({ path: sp, data: b64, directory: 'CACHE', recursive: true });
+                var u = await Fs.getUri({ path: sp, directory: 'CACHE' });
+                await Sh.share({ title: title, url: u.uri, files: [u.uri] });
+                // delete the plaintext share temp after the recipient has had time to read it
+                try { setTimeout(function () { Fs.deleteFile && Fs.deleteFile({ path: sp, directory: 'CACHE' }).catch(function () {}); }, 60000); } catch (e) {}
+                return true;
+              }
+            } catch (e) { if (e && /cancel|abort|dismiss/i.test((e.message || '') + '')) return true; }
+            K.toast('Sharing isn’t available on this device', 'info'); return false;
+          })();
+        },
+        _mimeFor: function (name) {
+          var e = (String(name || '').split('.').pop() || '').toLowerCase();
+          var m = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', ico: 'image/x-icon', bmp: 'image/bmp', heic: 'image/heic',
+            docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', csv: 'text/csv', txt: 'text/plain', zip: 'application/zip' };
+          return m[e] || 'application/octet-stream';
+        },
+        /* write a blob to an app-private temp and return its file:// uri for native hand-off */
+        _tempUri: function (blob, name) {
+          var Fs = K.plugin('Filesystem'); if (!Fs || !Fs.writeFile) return Promise.resolve(null);
+          var p = 'handoff/' + name;
+          return new Promise(function (resolve) {
+            var r = new FileReader();
+            r.onload = function () {
+              var b64 = String(r.result).split(',')[1] || '';
+              Fs.writeFile({ path: p, data: b64, directory: 'DATA', recursive: true })
+                .then(function () { return Fs.getUri({ path: p, directory: 'DATA' }); })
+                .then(function (u) { resolve({ uri: u && u.uri, path: p }); })
+                .catch(function () { resolve(null); });
+            };
+            r.onerror = function () { resolve(null); };
+            r.readAsDataURL(blob);
+          });
+        },
+        _cleanHandoff: function (p) { try { var Fs = K.plugin('Filesystem'); if (Fs && Fs.deleteFile) setTimeout(function () { Fs.deleteFile({ path: p, directory: 'DATA' }).catch(function () {}); }, 90000); } catch (e) {} },
+        /* OPEN an app-private file in another app via a temporary system grant (ACTION_VIEW).
+           Web / no-plugin → falls back to the Share sheet. */
+        openExternal: function (blob, name) {
+          name = (name || 'file').replace(/[\\/]/g, '_');
+          var FA = K.plugin('FileActions');
+          if (!FA || !FA.openWith) return K.shareFile(blob, name);
+          return K._tempUri(blob, name).then(function (t) {
+            if (!t || !t.uri) return K.shareFile(blob, name);
+            return FA.openWith({ uri: t.uri, name: name, mime: K._mimeFor(name) })
+              .then(function () { K._cleanHandoff(t.path); return true; })
+              .catch(function () { K._cleanHandoff(t.path); return K.shareFile(blob, name); });
+          });
+        },
+        /* EXPORT an app-private file to a user-chosen location via the OS picker (SAF). */
+        exportFile: function (blob, name) {
+          name = (name || 'file').replace(/[\\/]/g, '_');
+          var FA = K.plugin('FileActions');
+          if (!FA || !FA.saveToDevice) return K.shareFile(blob, name);
+          return K._tempUri(blob, name).then(function (t) {
+            if (!t || !t.uri) return K.shareFile(blob, name);
+            return FA.saveToDevice({ uri: t.uri, name: name, mime: K._mimeFor(name) })
+              .then(function () { K._cleanHandoff(t.path); K.toast('Saved to your chosen location', 'ok'); return true; })
+              .catch(function (e) { K._cleanHandoff(t.path); if (!/cancel/i.test(((e && e.message) || '') + '')) K.toast('Export canceled', 'info'); return false; });
+          });
+        },
+        /* Fire a real OS notification for a saved file; tapping it opens the file in SnapJar. */
+        _notifySaved: function (name, kind, recentId, uri) {
+          var LN = K.plugin('LocalNotifications');
+          if (!LN || !LN.schedule) return;
+          K._ensureNotifPerm(LN).then(function (ok) {
+            if (!ok) return;
+            var id = (+new Date()) % 2000000000;
+            LN.schedule({ notifications: [{
+              id: id,
+              title: 'Saved to SnapJar',
+              body: 'Your file is ready — tap to open',   // PRIVACY: don't put the (possibly sensitive) filename on the lock screen / to notification-listener apps
+              smallIcon: 'ic_stat_snapjar',
+              iconColor: '#5B5BD6',
+              visibility: 0,                               // VISIBILITY_PRIVATE — hide content on a locked screen
+              extra: { recentId: recentId || null, kind: kind, uri: uri || null, name: name }
+            }] }).catch(function () {});
+          });
+        },
+        _ensureNotifPerm: function (LN) {
+          if (!LN.checkPermissions) return Promise.resolve(true);
+          return LN.checkPermissions().then(function (p) {
+            if (p && p.display === 'granted') return true;
+            if (!LN.requestPermissions) return false;
+            return LN.requestPermissions().then(function (r) { return !!(r && r.display === 'granted'); });
+          }).catch(function () { return false; });
+        },
+        _initNotifTap: function () {
+          var LN = K.plugin('LocalNotifications');
+          if (!LN || !LN.addListener) return;
+          try {
+            LN.addListener('localNotificationActionPerformed', function (ev) {
+              var ex = ev && ev.notification && ev.notification.extra; if (!ex) return;
+              var nm = ex.name || '';
+              if (ex.kind === 'pdf' && ex.recentId) location.href = '/tools/pdf-studio.html?recent=' + encodeURIComponent(ex.recentId);
+              else if (ex.recentId && /\.(docx?|xlsx?|pptx?|csv|txt)$/i.test(nm)) location.href = '/tools/pdf-studio.html?docopen=' + encodeURIComponent(ex.recentId);
+              else location.href = '/recent.html';
+            });
+          } catch (e) {}
+        },
+        /* OPEN-WITH: another app sent SnapJar a PDF/image (tap a PDF in a file manager →
+           pick SnapJar). MainActivity copied it to app storage; load + open it here. */
+        _checkIncoming: function () {
+          var IF = K.plugin('IncomingFile');
+          if (!IF || !IF.getPending || K._incomingBusy) return;
+          K._incomingBusy = true;
+          IF.getPending().then(function (res) {
+            K._incomingBusy = false;
+            // flag it before anything else so the app-open ad bails out (see aoShowCold)
+            if (res && (res.text || res.path)) window.__sjIncoming = true;
+            /* Shared TEXT (Share → SnapJar from a browser, email, notes app) → the Scan-to-Text
+               result screen, where Listen is one tap away. Nothing is fetched: the user handed
+               us the text, so "nothing leaves your device" still holds. */
+            if (res && res.text) {
+              /* A shared LINK to a PDF is a different intent from shared prose: fetch and open it
+                 rather than reading the URL aloud. Anything else goes to Scan-to-Text to listen. */
+              /* A shared PDF link downloads; a shared ARTICLE link gets read-mode extracted;
+                 anything else is prose the user selected, so it goes straight to Listen. */
+              var pdf = K._pdfLink(res.text);
+              if (pdf) { K.openFromLink(pdf); return; }
+              var any = K._anyLink(res.text);
+              if (any && res.text.trim().length < any.length + 40) { K.chooseLinkAction(any); return; }
+              try {
+                sessionStorage.setItem('sj_shared_text', res.text);
+                if (res.title) sessionStorage.setItem('sj_shared_title', res.title);
+              } catch (e) {}
+              location.href = '/tools/text-scan.html?shared=1';
+              return;
+            }
+            if (!res || res.none || !res.path) return;
+            var src = (window.Capacitor && window.Capacitor.convertFileSrc) ? window.Capacitor.convertFileSrc(res.path) : res.path;
+            var name = res.name || 'document';
+            var isPdf = /pdf/i.test(res.mime || '') || /\.pdf$/i.test(name);
+            var isDoc = /\.(docx?|xlsx?|pptx?|csv|txt)$/i.test(name) || /word|sheet|excel|presentation|csv|text\/plain/i.test(res.mime || '');
+            var isImg = /^image\//i.test(res.mime || '') || /\.(jpe?g|png|webp|gif|bmp|heic)$/i.test(name);
+            K.toast('Opening ' + name + '…', 'work');
+            fetch(src).then(function (r) { return r.blob(); }).then(function (blob) {
+              if (!window.SJRecents) { K.toast('Could not open the file', 'warn'); return; }
+              window.SJRecents.add({ name: name, kind: isPdf ? 'pdf' : 'file', blob: blob }).then(function (id) {
+                if (!id) { K.toast('Could not open the file', 'warn'); return; }
+                if (isPdf) location.href = '/tools/pdf-studio.html?recent=' + encodeURIComponent(id);
+                else if (isDoc) location.href = '/tools/pdf-studio.html?docopen=' + encodeURIComponent(id);
+                else location.href = '/recent.html';   // images & other → My Files
+              });
+            }).catch(function () { K.toast('Could not open the file', 'warn'); });
+          }).catch(function () { K._incomingBusy = false; });
+        },
+        /* Pull a direct PDF link out of shared text. Deliberately strict — only http(s) URLs
+           that really point at a .pdf. A page ABOUT a book isn't a book, and guessing would
+           mean downloading HTML and failing after the fact. */
+        _pdfLink: function (text) {
+          var m = String(text || '').match(/https?:\/\/[^\s<>"']+/i);
+          if (!m) return null;
+          var url = m[0].replace(/[.,);\]]+$/, '');
+          var path = url.split('?')[0].split('#')[0];
+          return /\.pdf$/i.test(path) ? url : null;
+        },
+        /* Open a website INSIDE SnapJar via a Chrome Custom Tab.
+           Deliberately NOT the app's own WebView: that shares an origin with the Capacitor
+           bridge, so any hostile page would sit next to plugins that can read files. A Custom
+           Tab renders in a separate process with no bridge access, shows the real URL (so
+           phishing is visible), and stays inside SnapJar's task — back returns here. */
+        openWebsite: function (url) {
+          if (!/^https?:\/\//i.test(url || '')) { K.toast('That doesn’t look like a web link', 'err'); return; }
+          var B = K.plugin('Browser');
+          if (B && B.open) {
+            B.open({ url: url, toolbarColor: '#6b4dff', presentationStyle: 'fullscreen' }).catch(function () {
+              try { window.open(url, '_system'); } catch (e) {}
+            });
+          } else { try { window.open(url, '_system'); } catch (e) {} }
+        },
+        /* Small action sheet — a shared link is ambiguous: they may want to listen to it or
+           just look at it. Asking once beats guessing wrong every time. */
+        chooseLinkAction: function (url) {
+          var host = url.replace(/^https?:\/\//i, '').split('/')[0];
+          var ov = document.createElement('div');
+          ov.className = 'sj-linksheet';
+          ov.innerHTML =
+            '<div class="sj-lscard" role="dialog" aria-modal="true" aria-label="Open link">' +
+              '<div class="sj-lsh">Open this link</div>' +
+              '<div class="sj-lsu"></div>' +
+              '<button class="sj-lsb sj-lsb-primary" data-a="listen"><span>🎧</span><b>Read it aloud</b><small>Just the article — no menus or ads</small></button>' +
+              '<button class="sj-lsb" data-a="open"><span>🌐</span><b>Open the page</b><small>Browse it inside SnapJar</small></button>' +
+              '<button class="sj-lsx" data-a="cancel">Cancel</button>' +
+            '</div>';
+          ov.querySelector('.sj-lsu').textContent = host;
+          document.body.appendChild(ov);
+          var prevBack = window.__sjBack;
+          function close(){
+            try { ov.remove(); } catch (e) {}
+            window.__sjBack = prevBack;                  // hand Back control back to the page
+            try { K.adResume && K.adResume(); } catch (e) {}
+          }
+          /* Claim the hardware Back while the sheet is up. Without this it fell through to the
+             global handler and navigated the user off the page entirely. */
+          window.__sjBack = function (){ close(); return true; };
+          try { K.adPause && K.adPause(); } catch (e) {}
+          ov.addEventListener('click', function (e){
+            if (e.target === ov) { close(); return; }
+            var b = e.target.closest && e.target.closest('button[data-a]'); if (!b) return;
+            var a = b.getAttribute('data-a'); close();
+            if (a === 'listen') K.readFromLink(url);
+            else if (a === 'open') K.openWebsite(url);
+          });
+        },
+        /* Any http(s) link, PDF or not — used to decide between "download it" and "read it". */
+        _anyLink: function (text) {
+          var m = String(text || '').match(/https?:\/\/[^\s<>"']+/i);
+          return m ? m[0].replace(/[.,);\]]+$/, '') : null;
+        },
+        /* Fetch a web page and keep ONLY the article. Mozilla Readability does the extraction,
+           the same engine behind Firefox Reader View, so nav bars, menus, cookie banners,
+           related-article rails and footers are dropped rather than read aloud.
+           The HTML is parsed in an INERT document (DOMParser never runs scripts) and only its
+           text is used — nothing is injected into the live page. */
+        readFromLink: function (url) {
+          var D = K.plugin('FileDownload');
+          if (!D || !D.fetchText) { K.toast('Opening links isn’t available on this device', 'err'); return; }
+          var t = K.toast('Fetching the article…', 'work', 60000);
+          if (!window.__sjLoadReadability) { K.toast('Article reading isn’t available yet — try again', 'err'); return; }
+          D.fetchText({ url: url }).then(function (res) {
+            if (!res || !res.html) throw new Error('empty');
+            return window.__sjLoadReadability().then(function (Readability) {
+              var docu = new DOMParser().parseFromString(res.html, 'text/html');
+              try {                                        // resolve relative URLs for the parser
+                var b = docu.createElement('base'); b.href = res.url || url;
+                docu.head && docu.head.appendChild(b);
+              } catch (e) {}
+              var art = new Readability(docu).parse();
+              var title = (art && art.title) || (docu.title || '').trim() || 'Article';
+              /* Strip reference markers before they're spoken. "[1][2]" reads aloud as
+                 "one two" mid-sentence, and "[citation needed]" is worse — pure noise when
+                 you're listening rather than reading. */
+              var text = (art && art.textContent ? art.textContent : '')
+                .replace(/\[\s*\d+\s*\]/g, '')                                  // [1] [23]
+                .replace(/\[\s*(citation needed|edit|note \d+|[a-z])\s*\]/gi, '')  // [citation needed] [edit] [a]
+                .replace(/[ \t]{2,}/g, ' ')
+                .replace(/\n{3,}/g, '\n\n').trim();
+              if (!text || text.length < 120) throw new Error('no article');
+              return { title: title, text: text };
+            });
+          }).then(function (out) {
+            try { if (t && t.remove) t.remove(); } catch (e) {}
+            try {
+              sessionStorage.setItem('sj_shared_text', out.text);
+              sessionStorage.setItem('sj_shared_title', out.title);
+            } catch (e) {}
+            location.href = '/tools/text-scan.html?shared=1';
+          }).catch(function () {
+            try { if (t && t.remove) t.remove(); } catch (e) {}
+            K.toast('Couldn’t find an article on that page — try copying the text instead', 'err', 5000);
+          });
+        },
+        /* Download a PDF natively (no CORS, no CSP hole, bytes verified before opening),
+           save it to My Files, then open it in the reader. */
+        openFromLink: function (url) {
+          var D = K.plugin('FileDownload');
+          if (!D || !D.download) { K.toast('Opening links isn’t available on this device', 'err'); return; }
+          var t = K.toast('Downloading…', 'work', 60000);
+          D.download({ url: url }).then(function (res) {
+            if (!res || !res.path) throw new Error('no file');
+            var src = (window.Capacitor && window.Capacitor.convertFileSrc) ? window.Capacitor.convertFileSrc(res.path) : res.path;
+            return fetch(src).then(function (r) { return r.blob(); }).then(function (blob) {
+              if (!window.SJRecents) throw new Error('no store');
+              return window.SJRecents.add({ name: res.name || 'document.pdf', kind: 'pdf', blob: blob });
+            });
+          }).then(function (id) {
+            try { if (t && t.remove) t.remove(); } catch (e) {}
+            if (!id) { K.toast('Could not open that file', 'err'); return; }
+            location.href = '/tools/pdf-studio.html?recent=' + encodeURIComponent(id);
+          }).catch(function (err) {
+            try { if (t && t.remove) t.remove(); } catch (e) {}
+            K.toast((err && err.message) ? err.message : 'Could not download that file', 'err', 5000);
+          });
+        },
+        _imgThumb: function (blob) {
+          return new Promise(function (res) {
+            try {
+              var url = URL.createObjectURL(blob), img = new Image();
+              img.onload = function () {
+                try {
+                  var S = 256, s = Math.min(S / img.width, S / img.height, 1), w = Math.max(1, img.width * s | 0), h = Math.max(1, img.height * s | 0);
+                  var c = document.createElement('canvas'); c.width = w; c.height = h;
+                  c.getContext('2d').drawImage(img, 0, 0, w, h);
+                  URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.7));
+                } catch (e) { URL.revokeObjectURL(url); res(null); }
+              };
+              img.onerror = function () { URL.revokeObjectURL(url); res(null); };
+              img.src = url;
+            } catch (e) { res(null); }
+          });
+        },
+        _grabDownload: function (a) {
+          var href = (a.getAttribute && a.getAttribute('href')) || a.href || '';
+          var name = (a.getAttribute && a.getAttribute('download')) || 'file';
+          if (!/^blob:|^data:/.test(href)) return false;
+          fetch(href).then(function (r) { return r.blob(); }).then(function (b) { K.saveDownload(b, name); }).catch(function () { K._saveToast(); });
+          return true;
+        },
+        _initFeedback: function () {
+          var native = K._isNative();
+          // 1) real user clicks on in-DOM download links
+          document.addEventListener('click', function (e) {
+            var a = e.target && e.target.closest && e.target.closest('a[download],[data-sj-download]');
+            if (!a || a._sjQuiet) return;
+            if (native && /^blob:|^data:/.test((a.getAttribute('href') || a.href || ''))) { e.preventDefault(); K._grabDownload(a); }
+            else setTimeout(K._saveToast, 60);
+          }, true);
+          // 2) programmatic downloads (jsPDF/pdf-lib/anchor.click()) — even detached anchors
+          try {
+            var proto = HTMLAnchorElement.prototype, orig = proto.click;
+            proto.click = function () {
+              try {
+                if (this.hasAttribute && this.hasAttribute('download') && !this._sjQuiet) {
+                  if (native && /^blob:|^data:/.test((this.getAttribute('href') || this.href || ''))) { if (K._grabDownload(this)) return; }
+                  else setTimeout(K._saveToast, 60);
+                }
+              } catch (e) {}
+              return orig.apply(this, arguments);
+            };
+          } catch (e) {}
+          document.addEventListener('change', function (e) {
+            var inp = e.target;
+            if (!inp || inp.type !== 'file' || !inp.files || !inp.files.length) return;
+            K._validateFiles(inp.files, K._acceptExts(inp.getAttribute('accept')), K._acceptLabel(inp.getAttribute('accept')));
+          }, true);
+        },
+        /* Shared file validator (root-level): one plain-language gate for BOTH the file-input
+           change path AND drag-drop. Non-blocking — toasts what/why so "people behaving like
+           people" cases (empty, wrong-type, corrupt PDF, huge) fail kindly, not silently. */
+        _validateFiles: function (files, ex, label) {
+          var K = window.SnapJarKit; if (!files || !files.length) return;
+          var big = 0, empty = 0, wrong = 0, n = files.length;
+          for (var i = 0; i < n; i++) {
+            var f = files[i];
+            if (f.size > 35 * 1024 * 1024) big++;
+            if (f.size === 0) empty++;
+            if (ex && ex.length) { var fe = (f.name.split('.').pop() || '').toLowerCase(); if (fe && ex.indexOf(fe) < 0) wrong++; }
+          }
+          if (empty) K.toast(empty === n ? 'That file is empty — please choose another.' : 'Some files are empty and will be skipped.', 'warn', 3600);
+          else if (wrong) K.toast('That looks like the wrong file type for this tool — please pick ' + (label || 'a supported file') + '.', 'warn', 4000);
+          else if (big) K.toast('Large file — this can take a few seconds on your device', 'work', 3400);
+          if (!empty && !wrong) for (var k = 0; k < n; k++) (function (f) {
+            if (f.size > 0 && /\.pdf$/i.test(f.name || '')) {
+              f.slice(0, 5).arrayBuffer().then(function (b) {
+                var s = ''; new Uint8Array(b).forEach(function (c) { s += String.fromCharCode(c); });
+                if (s.indexOf('%PDF') !== 0) K.toast('This PDF looks corrupt or isn’t a real PDF — try another file.', 'warn', 4200);
+              }).catch(function () {});
+            }
+          })(files[k]);
+        },
+        /* SECURITY: allowlist HTML sanitizer. The WebView runs at app-origin with the Capacitor
+           bridge + IndexedDB + Filesystem, so ANY untrusted HTML reaching innerHTML is a path to
+           reading/exfiltrating user files. Use this for ALL file-derived HTML (mammoth .docx,
+           xlsx sheet_to_html, pasted content). Drops scripts/handlers/dangerous tags, unwraps
+           unknown tags (keeps text), and only allows http(s)/mailto/tel/# hrefs + data:image src. */
+        sanitizeHtml: function (html) {
+          try {
+            var docp = new DOMParser().parseFromString('<div id="__sjroot">' + (html || '') + '</div>', 'text/html');
+            var root = docp.getElementById('__sjroot');
+            var ALLOW = { A:1,B:1,STRONG:1,I:1,EM:1,U:1,S:1,P:1,BR:1,UL:1,OL:1,LI:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,BLOCKQUOTE:1,PRE:1,CODE:1,SPAN:1,DIV:1,TABLE:1,THEAD:1,TBODY:1,TFOOT:1,TR:1,TD:1,TH:1,CAPTION:1,COLGROUP:1,COL:1,IMG:1,HR:1,SUB:1,SUP:1,SMALL:1 };
+            var DROP = /^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|LINK|META|FORM|BUTTON|INPUT|TEXTAREA|SELECT|OPTION|SVG|MATH|BASE|NOSCRIPT|TITLE|HEAD|AUDIO|VIDEO|SOURCE|TRACK|APPLET|FRAME|FRAMESET|TEMPLATE)$/;
+            function clean(node){
+              var kids = Array.prototype.slice.call(node.childNodes);
+              for (var i = 0; i < kids.length; i++){
+                var n = kids[i];
+                if (n.nodeType === 8){ n.parentNode.removeChild(n); continue; }   // comments
+                if (n.nodeType !== 1) continue;                                    // keep text
+                var tag = n.tagName;
+                if (DROP.test(tag)){ n.parentNode.removeChild(n); continue; }      // dangerous → delete subtree
+                if (!ALLOW[tag]){                                                  // unknown → unwrap (keep children/text)
+                  while (n.firstChild) node.insertBefore(n.firstChild, n);
+                  node.removeChild(n); i--; continue;
+                }
+                // strip every attribute except a tiny safe allowlist
+                var attrs = Array.prototype.slice.call(n.attributes);
+                for (var a = 0; a < attrs.length; a++){
+                  var name = attrs[a].name.toLowerCase(), val = (attrs[a].value || '').replace(/[\u0000-\u0020]+/g, '');
+                  if (name === 'href' && /^(https?:|mailto:|tel:|#)/i.test(val)) continue;
+                  if (name === 'src' && /^data:image\//i.test(val)) continue;       // mammoth embeds images as data:image
+                  if (name === 'colspan' || name === 'rowspan' || name === 'alt') continue;
+                  n.removeAttribute(attrs[a].name);                                 // on*, style, xlink:href, formaction, src http, etc. → gone
+                }
+                if (tag === 'A'){ n.setAttribute('rel', 'noopener noreferrer nofollow'); }
+                clean(n);
+              }
+            }
+            clean(root);
+            return root.innerHTML;
+          } catch (e) { return ''; }
+        },
+        /* Shared input-extremes validator (UX audit §3 + §6): one plain-language gate every
+           tool can call so "people behaving like people" cases fail kindly, not with a crash.
+           Returns { ok:true } or { ok:false, msg:'what/why/what-next' }. */
+        checkFile: function (file, opts) {
+          opts = opts || {};
+          if (!file) return { ok: false, msg: 'No file selected — choose a file to continue.' };
+          if (file.size === 0) return { ok: false, msg: 'That file is empty — please pick another.' };
+          if (opts.maxMB && file.size > opts.maxMB * 1024 * 1024) return { ok: false, msg: 'That file is over ' + opts.maxMB + 'MB — try a smaller one.' };
+          if (opts.exts && opts.exts.length) {
+            var ext = (file.name.split('.').pop() || '').toLowerCase();
+            if (opts.exts.indexOf(ext) < 0) return { ok: false, msg: 'That’s a .' + (ext || '?') + ' file — this tool needs ' + opts.exts.map(function (x){ return '.' + x; }).join(' or ') + '.' };
+          }
+          return { ok: true };
+        },
+        /* derive the accepted extension list from an input's accept attribute (root-level
+           wrong-type guard). Returns [] when accept is broad/unknown → no false positives. */
+        _acceptExts: function (accept) {
+          if (!accept) return [];
+          var ex = [];
+          accept.toLowerCase().split(',').forEach(function (t) {
+            t = t.trim();
+            if (!t) return;
+            if (t.charAt(0) === '.') ex.push(t.slice(1));
+            else if (t === 'image/*') ex.push('png','jpg','jpeg','webp','gif','heic','heif','bmp','svg','ico','avif');
+            else if (t === 'application/pdf') ex.push('pdf');
+            else if (t.indexOf('wordprocessing') >= 0) ex.push('docx');
+            else if (t === 'image/svg+xml') ex.push('svg');
+          });
+          return ex;
+        },
+        _acceptLabel: function (accept) {
+          var a = (accept || '').toLowerCase();
+          if (a.indexOf('wordprocessing') >= 0 || a.indexOf('docx') >= 0) return 'a Word .docx';
+          if (a.indexOf('pdf') >= 0) return 'a PDF';
+          if (a.indexOf('svg') >= 0) return 'an SVG';
+          if (a.indexOf('image/') >= 0 || /\.(png|jpe?g|webp|gif|heic)/.test(a)) return 'an image';
+          return 'a supported file';
+        }
+      };
+      window.SnapJarKit = K;
+
+      /* ===== Crash recorder (on-device, zero network) =====
+         SnapJar's crashes are overwhelmingly JavaScript, which a native reporter (Crashlytics)
+         would not catch anyway. Rather than ship an analytics SDK — which would mean new data
+         collection, a Data Safety declaration and a contradiction of "we store nothing" — we keep
+         a small ring buffer of the last errors ON THE DEVICE. Nothing is ever transmitted. The
+         user can choose to attach it to a support email from Settings → Help.
+         NOTE: this does NOT capture native crashes or ANRs. Firebase Crashlytics is still the
+         plan for those once the Play listing exists. */
+      (function () {
+        var KEY = 'sj_errlog', MAX = 25;
+        function read() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+        function record(kind, msg, src, line, stack) {
+          try {
+            var log = read();
+            log.push({
+              t: new Date().toISOString(),
+              k: kind,
+              m: String(msg || '').slice(0, 300),
+              // page path only — never query strings, which can carry a document id
+              p: (location.pathname || '').slice(0, 120),
+              s: String(src || '').split('/').pop().slice(0, 80),
+              l: line || 0,
+              st: String(stack || '').split('\n').slice(0, 4).join(' | ').slice(0, 400)
+            });
+            while (log.length > MAX) log.shift();          // ring buffer — bounded storage
+            localStorage.setItem(KEY, JSON.stringify(log));
+          } catch (e) { /* storage full / private mode — never let logging break the app */ }
+        }
+        window.addEventListener('error', function (e) {
+          if (e && e.target && e.target !== window && e.target.tagName) {   // failed asset, not a JS throw
+            record('asset', (e.target.tagName + ' failed to load'), e.target.src || e.target.href, 0, '');
+            return;
+          }
+          record('error', e && e.message, e && e.filename, e && e.lineno, e && e.error && e.error.stack);
+        }, true);
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e && e.reason;
+          record('promise', (r && (r.message || r)) || 'unhandled rejection', '', 0, r && r.stack);
+        });
+        K.errorLog = read;
+        K.clearErrorLog = function () { try { localStorage.removeItem(KEY); } catch (e) {} };
+        K.errorReport = function () {
+          var log = read(); if (!log.length) return '';
+          return log.map(function (x) { return x.t + ' [' + x.k + '] ' + x.m + (x.s ? ' @' + x.s + ':' + x.l : '') + (x.p ? ' (' + x.p + ')' : ''); }).join('\n');
+        };
+      })();
+      function sjInit(){ K._initStatus(); K._initFeedback(); if (K._isNative()) { K._initNotifTap(); K._checkIncoming(); window.addEventListener('sjIncomingFile', K._checkIncoming); } }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sjInit); else sjInit();
+    })();
+  </script>
+  {IS_APP && <script is:inline set:html={APP_LINK_FIX}></script>}
+  {IS_APP && <script is:inline>
+    /* KEYBOARD LIFT — keep bottom-anchored input sheets above the on-screen keyboard.
+       android:windowSoftInputMode="adjustResize" already shrinks the WebView on most devices
+       (then this measures ~0 extra and does nothing). But some Capacitor WebViews DON'T resize,
+       leaving the IME over the sheet — so we also measure visualViewport: the covered height is
+       (layout height − visual height − offsetTop). We publish it as --kb and add .kb-open; the
+       sheet CSS translates the card up by that amount. Self-cancelling: whichever path the device
+       takes, the card ends up just above the keyboard, never behind it. */
+    (function(){
+      var vv = window.visualViewport; if(!vv) return;
+      var root = document.documentElement, body = document.body, raf;
+      function apply(){
+        var covered = Math.max(0, Math.round((window.innerHeight - vv.height - vv.offsetTop)));
+        root.style.setProperty('--kb', covered + 'px');
+        body.classList.toggle('kb-open', covered > 80);   // >80px = a real keyboard, not a UI chrome delta
+      }
+      function onvv(){ if(raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(apply); }
+      vv.addEventListener('resize', onvv); vv.addEventListener('scroll', onvv);
+    })();
+  </script>}
+  {IS_APP && <script is:inline>
+    /* SJRecents — on-device document library (IndexedDB). Files (with bytes + a page-1
+       thumbnail) and user-created Folders, all local. Loose files auto-trim; foldered
+       files are kept (the user organised them). */
+    window.SJRecents = (function () {
+      var DB = 'snapjar', FILES = 'recents', FOLDERS = 'folders', MAX = 60;
+      function open() { return new Promise(function (res, rej) { var r = indexedDB.open(DB, 2);
+        r.onupgradeneeded = function () { var db = r.result;
+          if (!db.objectStoreNames.contains(FILES)) db.createObjectStore(FILES, { keyPath: 'id' });
+          if (!db.objectStoreNames.contains(FOLDERS)) db.createObjectStore(FOLDERS, { keyPath: 'id' }); };
+        r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+      function st(store, mode) { return open().then(function (db) { return db.transaction(store, mode).objectStore(store); }); }
+      function uid(p) { return p + Date.now() + Math.random().toString(36).slice(2, 6); }
+      function all(store) { return st(store, 'readonly').then(function (s) { return new Promise(function (res) { var out = []; s.openCursor().onsuccess = function (e) { var c = e.target.result; if (c) { out.push(c.value); c.continue(); } else { out.sort(function (a, b) { return b.ts - a.ts; }); res(out); } }; }); }).catch(function () { return []; }); }
+      var API = {
+        add: function (item) {
+          if (!item || !item.blob) return Promise.resolve(null);
+          var rec = { id: uid('r'), name: item.name || 'Document.pdf', kind: item.kind || 'pdf', ts: Date.now(), size: item.blob.size || 0, blob: item.blob, thumb: item.thumb || null, folderId: item.folderId || null };
+          return st(FILES, 'readwrite').then(function (s) { return new Promise(function (res) { var r = s.put(rec); r.onsuccess = function () { res(rec.id); }; r.onerror = function () { res(null); }; }); }).then(function (id) { return API.trim().then(function () { return id; }); }).catch(function () { return null; });
+        },
+        update: function (id, patch) { return st(FILES, 'readwrite').then(function (s) { return new Promise(function (res) { var g = s.get(id); g.onsuccess = function () { var rec = g.result; if (!rec) { res(false); return; } for (var k in patch) rec[k] = patch[k]; s.put(rec); res(true); }; g.onerror = function () { res(false); }; }); }).catch(function () { return false; }); },
+        list: function (folderId) { folderId = folderId || null; return all(FILES).then(function (items) { return items.filter(function (it) { return (it.folderId || null) === folderId; }); }); },
+        get: function (id) { return st(FILES, 'readonly').then(function (s) { return new Promise(function (res) { var r = s.get(id); r.onsuccess = function () { res(r.result || null); }; r.onerror = function () { res(null); }; }); }).catch(function () { return null; }); },
+        remove: function (id) { return st(FILES, 'readwrite').then(function (s) { s.delete(id); }).catch(function () {}); },
+        move: function (id, folderId) { return API.update(id, { folderId: folderId || null }); },
+        rename: function (id, name) { return API.update(id, { name: name }); },
+        clear: function () { return st(FILES, 'readwrite').then(function (s) { s.clear(); }).catch(function () {}); },
+        trim: function () { return all(FILES).then(function (items) { var loose = items.filter(function (it) { return !it.folderId; }); return Promise.all(loose.slice(MAX).map(function (it) { return API.remove(it.id); })); }).catch(function () {}); },
+        /* folders */
+        addFolder: function (name) { var f = { id: uid('f'), name: name || 'Folder', ts: Date.now() }; return st(FOLDERS, 'readwrite').then(function (s) { return new Promise(function (res) { var r = s.put(f); r.onsuccess = function () { res(f.id); }; r.onerror = function () { res(null); }; }); }).catch(function () { return null; }); },
+        listFolders: function () { return all(FOLDERS); },
+        renameFolder: function (id, name) { return st(FOLDERS, 'readwrite').then(function (s) { var g = s.get(id); g.onsuccess = function () { var f = g.result; if (f) { f.name = name; s.put(f); } }; }).catch(function () {}); },
+        removeFolder: function (id) { return API.list(id).then(function (files) { return Promise.all(files.map(function (f) { return API.move(f.id, null); })); }).then(function () { return st(FOLDERS, 'readwrite').then(function (s) { s.delete(id); }); }).catch(function () {}); },
+        folderCount: function (id) { return API.list(id).then(function (f) { return f.length; }); }
+      };
+      return API;
+    })();
+  </script>}
+  {!IS_APP && ADSENSE_CLIENT && (
+    <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`} crossorigin="anonymous"></script>
+  )}
+  <slot name="head" />
+</head>
+<body class={IS_APP ? 'is-app' : undefined}>
+  <div class="promise">
+    <span class="pi">Free</span>
+    <span class="pi">No signup</span>
+    <span class="pi">No upload</span>
+    <span class="pi strong">Your files never leave your device</span>
+  </div>
+  <nav><div class="nav-in">
+    <a class="brand" href="/"><span class="logo">⚡</span> SnapJar</a>
+    <div class="nav-links">
+      <div class="mega-wrap">
+        <button class="mega-trigger" id="megaBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="megaPanel">Products <span class="caret" aria-hidden="true">▾</span></button>
+        <div class="mega" id="megaPanel" role="menu" aria-label="All products">
+          <div class="mega-col">
+            <div class="mega-h">📷 Scan &amp; Read</div>
+            <a role="menuitem" href="/tools/scanner">Scan Document</a>
+            <a role="menuitem" href="/tools/qr-scan">Scan QR</a>
+            <a role="menuitem" href="/tools/text-scan">Scan to Text (OCR)</a>
+            <a role="menuitem" href="/tools/pdf-studio?open=1">PDF Reader &amp; Listen</a>
+          </div>
+          <div class="mega-col">
+            <div class="mega-h">📄 PDF Tools</div>
+            <a role="menuitem" href="/tools/pdf-studio">PDF Editor ✦</a>
+            <a role="menuitem" href="/tools/pdf-tools">Merge PDF</a>
+            <a role="menuitem" href="/tools/compress-pdf">Compress PDF</a>
+            <a role="menuitem" href="/tools/organize-pdf">Organize PDF</a>
+            <a role="menuitem" href="/tools/split-pdf">Split PDF</a>
+            <a role="menuitem" class="all" href="/#pdf-tools">All PDF tools →</a>
+          </div>
+          <div class="mega-col">
+            <div class="mega-h">🔁 Create &amp; Convert</div>
+            <a role="menuitem" href="/tools/jpg-to-pdf">JPG → PDF</a>
+            <a role="menuitem" href="/tools/pdf-to-jpg">PDF → JPG</a>
+            <a role="menuitem" href="/tools/text-to-pdf">Text → PDF</a>
+            <a role="menuitem" href="/tools/word-to-pdf">Word → PDF</a>
+            <a role="menuitem" href="/tools/pdf-to-word">PDF → Word</a>
+          </div>
+          <div class="mega-col">
+            <div class="mega-h">✍️ Edit</div>
+            <a role="menuitem" href="/tools/pdf-studio?new=1">Write / Notes</a>
+            <a role="menuitem" href="/tools/watermark-pdf">Watermark PDF</a>
+            <a role="menuitem" href="/tools/add-page-numbers">Add Page Numbers</a>
+            <a role="menuitem" href="/tools/rotate-pdf">Rotate PDF</a>
+          </div>
+        </div>
+      </div>
+      <a href="/#scan-read" class="hide-sm">Scan</a>
+      <a href="/#pdf-tools" class="hide-sm">PDF</a>
+      <a href="/tools/pdf-studio" class="hide-sm">Editor</a>
+      <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">🌙</button>
+    </div>
+  </div></nav>
+
+  <slot />
+
+  {IS_APP && <BottomNav />}
+
+  {IS_APP && (
+    <div class="sj-offline" id="sjOffline" hidden>
+      <span class="sjo-ic">📶</span>
+      <span class="sjo-tx">You're offline — every tool still works on your device. Some images or links may not load.</span>
+      <button class="sjo-x" id="sjOfflineX" type="button" aria-label="Dismiss">✕</button>
+    </div>
+  )}
+  {IS_APP && (
+    <div class="sjcp" id="sjcp" hidden>
+      <div class="sjcp-card" role="dialog" aria-modal="true" aria-label="Pick a colour">
+        <div class="sjcp-h">Pick a colour</div>
+        <div class="sjcp-sv" id="sjcpSV"><span class="sjcp-sv-th" id="sjcpSVTh"></span></div>
+        <div class="sjcp-hue" id="sjcpHue"><span class="sjcp-hue-th" id="sjcpHueTh"></span></div>
+        <div class="sjcp-row">
+          <span class="sjcp-prev" id="sjcpPrev"></span>
+          <span class="sjcp-hash">#</span>
+          <input class="sjcp-hex" id="sjcpHex" type="text" inputmode="latin" autocomplete="off" spellcheck="false" maxlength="7" aria-label="Hex value" />
+        </div>
+        <div class="sjcp-presets" id="sjcpPresets"></div>
+        <div class="sjcp-actions">
+          <button class="sjcp-btn" id="sjcpCancel" type="button">Cancel</button>
+          <button class="sjcp-btn primary" id="sjcpSet" type="button">Set colour</button>
+        </div>
+      </div>
+    </div>
+  )}
+  {IS_APP && <script is:inline>
+    /* Premium colour picker: replaces the native WebView colour dialog for every
+       <input type=color>. Hides the native input (keeps it as the value holder + event
+       source) and shows a styled swatch that opens our HSV bottom sheet. */
+    (function () {
+      if (!document.body.classList.contains('is-app')) return;
+      var sheet = document.getElementById('sjcp'); if (!sheet) return;
+      var SV = document.getElementById('sjcpSV'), SVTh = document.getElementById('sjcpSVTh');
+      var HUE = document.getElementById('sjcpHue'), HUETh = document.getElementById('sjcpHueTh');
+      var PREV = document.getElementById('sjcpPrev'), HEX = document.getElementById('sjcpHex');
+      var PRESETS = document.getElementById('sjcpPresets'), SET = document.getElementById('sjcpSet'), CANCEL = document.getElementById('sjcpCancel');
+      var h = 250, s = 0.6, v = 0.9, target = null;
+      var PALETTE = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#30B0FF','#007AFF','#5856D6','#AF52DE','#FF2D55','#FFFFFF','#C7C7CC','#8E8E93','#000000'];
+      function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+      function hsv2rgb(H,S,V){ var c=V*S, x=c*(1-Math.abs((H/60)%2-1)), m=V-c, r,g,b;
+        if(H<60){r=c;g=x;b=0;}else if(H<120){r=x;g=c;b=0;}else if(H<180){r=0;g=c;b=x;}
+        else if(H<240){r=0;g=x;b=c;}else if(H<300){r=x;g=0;b=c;}else{r=c;g=0;b=x;}
+        return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)]; }
+      function rgb2hsv(r,g,b){ r/=255;g/=255;b/=255; var mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,H=0;
+        if(d){ if(mx===r)H=((g-b)/d)%6; else if(mx===g)H=(b-r)/d+2; else H=(r-g)/d+4; H*=60; if(H<0)H+=360; }
+        return [H, mx? d/mx : 0, mx]; }
+      function toHex(r,g,b){ return '#'+[r,g,b].map(function(x){return ('0'+x.toString(16)).slice(-2);}).join('').toUpperCase(); }
+      function curHex(){ var c=hsv2rgb(h,s,v); return toHex(c[0],c[1],c[2]); }
+      function paint(){
+        SV.style.background='linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),hsl('+h+',100%,50%)';
+        SVTh.style.left=(s*100)+'%'; SVTh.style.top=((1-v)*100)+'%';
+        var hex=curHex(); SVTh.style.background=hex; PREV.style.background=hex; HUETh.style.left=(h/360*100)+'%';
+        if(document.activeElement!==HEX) HEX.value=hex.slice(1);
+      }
+      function setFromHex(hx){ hx=(hx||'').replace('#','').trim(); if(hx.length===3)hx=hx.split('').map(function(c){return c+c;}).join('');
+        if(!/^[0-9a-fA-F]{6}$/.test(hx)) return false; var n=parseInt(hx,16),k=rgb2hsv((n>>16)&255,(n>>8)&255,n&255); h=k[0];s=k[1];v=k[2]; paint(); return true; }
+      function svDrag(e){ var r=SV.getBoundingClientRect(),p=e.touches?e.touches[0]:e; s=clamp((p.clientX-r.left)/r.width,0,1); v=clamp(1-(p.clientY-r.top)/r.height,0,1); paint(); }
+      function hueDrag(e){ var r=HUE.getBoundingClientRect(),p=e.touches?e.touches[0]:e; h=clamp((p.clientX-r.left)/r.width,0,1)*360; paint(); }
+      function bindDrag(el, fn){
+        function down(e){ e.preventDefault(); fn(e);
+          function mv(ev){ ev.preventDefault(); fn(ev); }
+          function up(){ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); }
+          document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
+          document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); }
+        el.addEventListener('pointerdown',down); el.addEventListener('touchstart',down,{passive:false});
+      }
+      bindDrag(SV, svDrag); bindDrag(HUE, hueDrag);
+      HEX.addEventListener('input', function(){ setFromHex(HEX.value); });
+      PALETTE.forEach(function(col){ var b=document.createElement('button'); b.type='button'; b.className='sjcp-ps'; b.style.background=col; b.setAttribute('aria-label',col); b.onclick=function(){ setFromHex(col); }; PRESETS.appendChild(b); });
+      function updateSwatch(sw,hex){ sw.querySelector('.sjcp-chip').style.background=hex; sw.querySelector('.sjcp-val').textContent=(hex||'').toUpperCase(); }
+      function open(input){ target=input; setFromHex(input.value || '#000000'); sheet.hidden=false; }
+      function close(){ sheet.hidden=true; target=null; }
+      CANCEL.onclick=close;
+      sheet.addEventListener('click', function(e){ if(e.target===sheet) close(); });
+      SET.onclick=function(){ if(target){ var hex=curHex(); target.value=hex; if(target._sjcpSwatch) updateSwatch(target._sjcpSwatch,hex); target.dispatchEvent(new Event('input',{bubbles:true})); target.dispatchEvent(new Event('change',{bubbles:true})); } close(); };
+      function upgrade(input){
+        if(input._sjcpDone) return; input._sjcpDone=true;
+        var sw=document.createElement('button'); sw.type='button'; sw.className='sjcp-swatch';
+        sw.innerHTML='<span class="sjcp-chip"></span><span class="sjcp-val"></span><svg class="sjcp-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+        updateSwatch(sw, input.value || '#000000');
+        input.style.display='none'; input._sjcpSwatch=sw;
+        input.parentNode.insertBefore(sw, input.nextSibling);
+        sw.onclick=function(e){ e.preventDefault(); e.stopPropagation(); open(input); };
+        input.addEventListener('click', function(e){ e.preventDefault(); open(input); });
+        input.addEventListener('input', function(){ updateSwatch(sw, input.value); });
+        input.addEventListener('change', function(){ updateSwatch(sw, input.value); });
+      }
+      function scan(){ var L=document.querySelectorAll('input[type=color]'); for(var i=0;i<L.length;i++) upgrade(L[i]); }
+      scan(); setTimeout(scan, 400);
+    })();
+  </script>}
+  {IS_APP && (
+    <div class="sjsel" id="sjsel" hidden>
+      <div class="sjsel-card" role="dialog" aria-modal="true" aria-label="Choose an option">
+        <div class="sjsel-h" id="sjselH">Select</div>
+        <div class="sjsel-list" id="sjselList"></div>
+      </div>
+    </div>
+  )}
+  {IS_APP && <script is:inline>
+    /* Premium dropdown (APP): replaces the native <select> popup with a themed bottom sheet
+       — consistent with every other sheet. The native select stays hidden as the value
+       holder + event source so each page's change handlers keep working. (csel = web only.) */
+    (function () {
+      if (!document.body.classList.contains('is-app')) return;
+      var sheet = document.getElementById('sjsel'); if (!sheet) return;
+      var listEl = document.getElementById('sjselList'), titleEl = document.getElementById('sjselH');
+      function splitLabel(t){ var m = (t || '').split(/\s+[—–-]\s+/); if (m.length > 1) return { title: m[0].trim(), desc: m.slice(1).join(' — ').trim() }; return { title: (t || '').trim(), desc: '' }; }
+      function fillTx(node, parts){ node.innerHTML = ''; var b = document.createElement('b'); b.textContent = parts.title || '—'; node.appendChild(b); if (parts.desc){ var s = document.createElement('small'); s.textContent = parts.desc; node.appendChild(s); } }
+      function updateBtn(sel){ if (!sel._sjBtn) return; var o = sel.options[sel.selectedIndex]; fillTx(sel._sjBtn.querySelector('.sjsel-tx'), splitLabel(o ? o.text : '')); }
+      function svgCheck(){ var s = document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24'); s.setAttribute('width','18'); s.setAttribute('height','18'); s.setAttribute('fill','none'); s.setAttribute('stroke','currentColor'); s.setAttribute('stroke-width','2.6'); s.setAttribute('stroke-linecap','round'); s.setAttribute('stroke-linejoin','round'); s.setAttribute('class','sjsel-ck'); s.innerHTML = '<path d="M20 6 9 17l-5-5"/>'; return s; }
+      function deriveLabel(sel){
+        if (sel.getAttribute('aria-label')) return sel.getAttribute('aria-label');
+        var l = sel.id && document.querySelector('label[for="' + sel.id + '"]'); if (l) return l.textContent.trim();
+        var lab = sel.closest('label'); if (lab){ var c = lab.cloneNode(true); var x = c.querySelector('select,input,.sjsel-trigger'); if (x && x.parentNode) x.parentNode.removeChild(x); var t = c.textContent.replace(/\s+/g,' ').trim(); if (t) return t; }
+        return 'Choose an option';
+      }
+      function open(sel){
+        titleEl.textContent = sel._sjLabel || 'Select'; listEl.innerHTML = '';
+        for (var i = 0; i < sel.options.length; i++){
+          (function(o, idx){
+            var on = idx === sel.selectedIndex;
+            var row = document.createElement('button'); row.type = 'button'; row.className = 'sjsel-opt' + (on ? ' on' : '');
+            var tx = document.createElement('span'); tx.className = 'sjsel-opt-tx'; fillTx(tx, splitLabel(o.text)); row.appendChild(tx);
+            if (on) row.appendChild(svgCheck());
+            row.onclick = function(){ if (sel.selectedIndex !== idx){ sel.selectedIndex = idx; sel.dispatchEvent(new Event('input',{bubbles:true})); sel.dispatchEvent(new Event('change',{bubbles:true})); updateBtn(sel); } close(); };
+            listEl.appendChild(row);
+          })(sel.options[i], i);
+        }
+        sheet.hidden = false;
+      }
+      function close(){ sheet.hidden = true; }
+      sheet.addEventListener('click', function(e){ if (e.target === sheet) close(); });
+      function upgrade(sel){
+        if (sel._sjDone || sel.multiple || sel.size > 1 || sel.hasAttribute('data-no-csel')) return; sel._sjDone = true;
+        sel._sjLabel = deriveLabel(sel);
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'sjsel-trigger';
+        b.innerHTML = '<span class="sjsel-tx"></span><svg class="sjsel-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+        sel._sjBtn = b; updateBtn(sel);
+        sel.style.display = 'none'; sel.setAttribute('tabindex','-1'); sel.setAttribute('aria-hidden','true');
+        sel.parentNode.insertBefore(b, sel.nextSibling);
+        b.onclick = function(e){ e.preventDefault(); e.stopPropagation(); open(sel); };
+        sel.addEventListener('change', function(){ updateBtn(sel); });
+      }
+      function scan(){ var L = document.querySelectorAll('select'); for (var i = 0; i < L.length; i++) upgrade(L[i]); }
+      scan(); setTimeout(scan, 400); setTimeout(scan, 1200);
+      /* some tools reveal their <select> only after a file loads / WASM is ready — catch those */
+      var _t; try { new MutationObserver(function(){ clearTimeout(_t); _t = setTimeout(scan, 150); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    })();
+  </script>}
+  {IS_APP && <script is:inline>
+    (function () {
+      var bar = document.getElementById('sjOffline'); if (!bar) return;
+      var dismissed = false;
+      function sync(){ if (!bar) return; var off = (navigator.onLine === false); bar.hidden = !(off && !dismissed); }
+      document.getElementById('sjOfflineX').addEventListener('click', function (){ dismissed = true; bar.hidden = true; });
+      window.addEventListener('online', function (){ dismissed = false; sync(); });
+      window.addEventListener('offline', function (){ dismissed = false; sync(); });
+      sync();
+    })();
+  </script>}
+  {IS_APP && <script is:inline>
+    /* Drag-to-dismiss for every bottom sheet — the grab handle finally works.
+       Reuses each sheet's own backdrop-close so behaviour stays consistent. */
+    (function () {
+      var CARDS = '.scan-card,.pr-sheet-card,.sjcp-card,.sjsel-card,.lib-sheet-card,.app-modal-card,.sj-ask-card';
+      /* a11y FOCUS-TRAP: keep Tab within the open sheet/dialog card (root-level, covers every overlay). */
+      function _vis(el){ return !!(el.getClientRects && el.getClientRects().length); }
+      function _openCard(){ var cs = document.querySelectorAll(CARDS); for (var i = 0; i < cs.length; i++) { if (_vis(cs[i])) return cs[i]; } return null; }
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Tab') return;
+        var card = _openCard(); if (!card) return;
+        var f = card.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+        f = Array.prototype.filter.call(f, _vis); if (!f.length) return;
+        var first = f[0], last = f[f.length - 1], a = document.activeElement;
+        if (e.shiftKey && (a === first || !card.contains(a))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (a === last || !card.contains(a))) { e.preventDefault(); first.focus(); }
+      }, true);
+      /* systemic DRAG-DROP validation (the file-input change path is already validated): empty
+         drops are hard-blocked; wrong-type / corrupt-PDF / huge are toasted via the same shared
+         validator so dropped files get the exact same plain-language guidance as picked files. */
+      document.addEventListener('drop', function (e) {
+        try {
+          var dt = e.dataTransfer; if (!dt || !dt.files || !dt.files.length) return;
+          var files = dt.files, K = window.SnapJarKit;
+          for (var i = 0; i < files.length; i++) { if (files[i].size === 0) { e.preventDefault(); e.stopImmediatePropagation(); if (K) K.toast('That file is empty — nothing to open', 'err'); return; } }
+          if (!K) return;
+          // drop zones aren't file inputs; borrow the accepted types from the page's file input
+          var inp = document.querySelector('input[type=file][accept]');
+          var ex = inp ? K._acceptExts(inp.getAttribute('accept')) : [];
+          var lbl = inp ? K._acceptLabel(inp.getAttribute('accept')) : '';
+          K._validateFiles(files, ex, lbl);
+        } catch (_) {}
+      }, true);
+      var d = null;
+      document.addEventListener('pointerdown', function (e) {
+        if (!e.target.closest) return;
+        var card = e.target.closest(CARDS); if (!card) return;
+        var r = card.getBoundingClientRect();
+        if (e.clientY - r.top > 64) return;                                 // only from the top grab zone
+        if (e.target.closest('button,a,input,textarea,select,canvas,[role=button],.sjcp-sv,.sjcp-hue')) return;
+        d = { card: card, y0: e.clientY, h: r.height, dy: 0 }; card.style.transition = 'none';
+      }, true);
+      document.addEventListener('pointermove', function (e) {
+        if (!d) return; var dy = e.clientY - d.y0; if (dy < 0) dy = 0; d.dy = dy;
+        d.card.style.transform = 'translateY(' + dy + 'px)';
+      });
+      function end() {
+        if (!d) return; var card = d.card, dy = d.dy, h = d.h; card.style.transition = '';
+        if (dy > Math.min(150, h * 0.32)) {
+          card.style.transform = 'translateY(' + (h + 60) + 'px)';
+          var ov = card.parentElement;
+          setTimeout(function () { card.style.transform = ''; if (ov && ov.click) ov.click(); }, 170);
+        } else { card.style.transform = ''; }
+        d = null;
+      }
+      document.addEventListener('pointerup', end);
+      document.addEventListener('pointercancel', end);
+    })();
+  </script>}
+  {IS_APP && <script is:inline>
+    /* AdMob — only the BANNER floats; it sits in a strip ABOVE the bottom nav (the nav
+       stays pinned to the very bottom). The banner is AUTO-HIDDEN the instant any bottom
+       sheet, menu or modal opens, so it can NEVER cover Delete or other controls. A
+       throttled interstitial shows MORE ads at natural breakpoints without overlaying
+       anything. Disabled on the immersive reader/editor/scan. TEST IDs until real ones set. */
+    (function () {
+      var AdMob = window.SnapJarKit ? window.SnapJarKit.plugin('AdMob') : null, K = window.SnapJarKit;
+      if (!AdMob || !AdMob.initialize) return;
+      var ADS_OFF = false; if (ADS_OFF) return; /* ads ON for release */
+      /* ========================= AdMob CONFIG — GO LIVE HERE =========================
+         To run REAL ads: (1) set ADS_TESTING = false, (2) paste YOUR real ad-unit IDs from
+         admob.google.com below, (3) put your real APP ID in android/.../AndroidManifest.xml
+         (com.google.android.gms.ads.APPLICATION_ID). Keep ADS_TESTING = true while developing
+         — NEVER show real ads on your own device (clicking them = AdMob ban). Register your
+         phone as a test device in AdMob if you must test real units. */
+      var ADS_TESTING = false; // LIVE ads (real units below). Test ads served ONE identical creative, so refreshes were invisible; real ads rotate visibly. Testers must NOT tap ads (invalid traffic).
+      // Paste REAL ad-unit IDs from admob.google.com. Leave '' to keep THAT placement on Google TEST ads.
+      var REAL_BANNER = 'ca-app-pub-4351869860119610/5896419968';        // ✓ live banner unit (also serves the MREC size)
+      var REAL_INTERSTITIAL = 'ca-app-pub-4351869860119610/6251643185';  // ✓ live interstitial unit
+      var _realB = !ADS_TESTING && !!REAL_BANNER, _realI = !ADS_TESTING && !!REAL_INTERSTITIAL;
+      var TEST_BANNER = _realB ? REAL_BANNER : 'ca-app-pub-3940256099942544/6300978111';
+      var TEST_INTERSTITIAL = _realI ? REAL_INTERSTITIAL : 'ca-app-pub-3940256099942544/1033173712';
+      var BANNER_TESTING = !_realB, INTERSTITIAL_TESTING = !_realI; // isTesting per placement (real unit → false → real ads)
+      var immersive = false; /* the PDF reader now shows a compact top ad; the editor/writer/scan hide it via overlay detection */
+      /* CONTEXTUAL TARGETING: send finance keywords on the calculator pages + the page's real
+         public canonical URL with every ad request. This nudges Google's auction toward finance
+         advertisers (better RELEVANCE/eCPM). NOTE: it does NOT change FILL — how often ads show
+         is driven by publish status + the user's own ad profile, not these signals. */
+      var FIN_KW = ['loan','personal loan','home loan','car loan','business loan','mortgage','EMI','interest rate','credit card','SIP','mutual fund','investment','insurance','fixed deposit','recurring deposit','savings','income tax','retirement','banking','finance','refinance','credit score','demat'];
+      function adKeywords() { try { return /\/calculators(\/|$)/.test(location.pathname) ? FIN_KW : null; } catch (e) { return null; } }
+      function adContentUrl() { try { var c = document.querySelector('link[rel="canonical"]'); return (c && c.href) ? c.href : null; } catch (e) { return null; } }
+      var root = document.documentElement, body = document.body;
+      function setAdH(px) { root.style.setProperty('--ad-h', (px > 0 ? px : 0) + 'px'); }
+      /* Reserve the top ad space from the VERY FIRST frame on every page. The native banner
+         persists across page navigations but its size event may NOT re-fire, so a page would
+         otherwise start with --ad-h:0 and the header would overlap the ad. We remember the
+         tallest ad height seen (localStorage) and apply it immediately; immersive pages = 0. */
+      /* reserve for the BIGGEST ad: never let the top space shrink below 90px (anchored
+         adaptive banners top out ~90px), and grow if a taller one ever appears → no creative
+         can EVER overlap the header, on first load or after a refresh. */
+      /* Use the ACTUAL anchored-banner height (small), floored at 50 and capped at 110, so a
+         past medium-rectangle (250px) can't inflate the top zone. */
+      /* fixed 320x100 large banner — reserve exactly its height (floor 100, cap 120) so it has its
+         own strip and the header always sits below it. */
+      function rememberAdH(h) { try { var m = Math.min(Math.max(h, 100), 120); localStorage.setItem('sj_adh', m); localStorage.setItem('sj_ads_on', '1'); setAdH(m); } catch (e) { setAdH(Math.min(Math.max(h, 100), 120)); } }
+      /* COLLAPSE-WHEN-EMPTY: reserve the top strip ONLY when a banner is actually showing in
+         THIS app session. sessionStorage survives intra-app page navigation (so the header
+         never overlaps a banner still showing from the previous page) but resets on a fresh
+         app launch (so a cold start with no ad fill shows NO white gap). */
+      function reservedH() { try { var s = +(localStorage.getItem('sj_adh') || 0); return (s >= 100 && s <= 120) ? s : 100; } catch (e) { return 100; } }
+      /* STABLE reserved strip: on every non-immersive app page reserve the ad zone from the FIRST
+         paint and KEEP it for the whole session. The native banner is an overlay that floats in/out
+         of this fixed strip — so the banner loading, refreshing, hiding for a sheet, or failing to
+         fill NEVER changes content height under the user (that height change + smooth-scroll was the
+         "scroll to the bottom and the page jumps back up" bug). The strip is app-coloured (app.css
+         ::before backdrop), so an unfilled strip is a clean band, not a white gap. */
+      if (immersive) { setAdH(0); }
+      else { setAdH(reservedH()); body.classList.add('ads-on'); }
+      function onSize(info) { var h = info && (info.height != null ? info.height : (info.size && info.size.height)); if (h && h > 0) rememberAdH(h); }
+      /* Has a real ad EVER filled this slot? Persisted so it survives page navigations
+         (Astro is MPA — every navigation re-runs this script) and app restarts. Banners
+         auto-refresh; some refresh cycles return "no fill". Once we've seen even one fill,
+         the native banner persists and refills into the SAME reserved strip, so we must NOT
+         collapse on a transient no-fill — that caused the ad to flicker in and out and the
+         header to jump. Only collapse while the slot has never filled (avoids an empty gap). */
+      var everFilled = false; try { everFilled = localStorage.getItem('sj_ad_filled') === '1'; } catch (e) {}
+      try { if (AdMob.addListener) {
+        AdMob.addListener('bannerViewSizeChanged', onSize); AdMob.addListener('bannerAdSizeChanged', onSize);
+        /* an ad actually loaded → reserve its strip + show it */
+        AdMob.addListener('bannerAdLoaded', function () { if (immersive) return; everFilled = true; try { localStorage.setItem('sj_ad_filled', '1'); sessionStorage.setItem('sj_ad_showing', '1'); } catch (e) {} setAdH(reservedH()); try { body.classList.add('ads-on'); } catch (e) {} });
+        /* no fill (or error): if the slot has filled before, KEEP the reserved strip stable
+           (the banner refills into it — no flicker). Only collapse if it has never filled. */
+        AdMob.addListener('bannerAdFailedToLoad', function () { /* keep the reserved strip stable — collapsing it would shift content under the user (scroll jump). The strip is app-coloured when empty. */ });
+      } } catch (e) {}
+      /* Measure the TRUE top of the nav region — including the raised Scan button, which
+         sticks up above the bar — and convert to the banner's physical-px margin so the
+         ad sits fully ABOVE the whole nav on any density/display. Guessing a height left
+         the banner clipping the Scan button; measuring the highest nav pixel fixes it. */
+      function navMargin() {
+        var vh = window.innerHeight || 800, top = vh, dpr = window.devicePixelRatio || 1;
+        var nav = document.querySelector('.appbar'); var scan = document.getElementById('navScan');
+        try { if (nav) top = Math.min(top, nav.getBoundingClientRect().top); } catch (e) {}
+        try { if (scan) top = Math.min(top, scan.getBoundingClientRect().top); } catch (e) {}
+        var clearance = Math.max(64, vh - top);   // CSS px from the highest nav pixel to the bottom
+        return Math.round((clearance + 50) * dpr); // clear the full nav + a 50px gap (×dpr→physical px the plugin wants)
+      }
+      /* hide the banner whenever ANY overlay/sheet/modal is open — never cover controls. */
+      var OVERLAY_SEL = '.sjcp:not([hidden]),.sjsel:not([hidden]),.lib-sheet,.scan-sheet:not([hidden]),.app-modal:not([hidden]),.sj-ask,.sj-sheet:not([hidden]),.pr-sheet:not([hidden]),#prShareSheet:not([hidden]),#prFilter:not([hidden]),#prQrRes:not([hidden]),#wrSettings:not([hidden]),#prEdit:not([hidden]),#prWrite:not([hidden]),[data-sj-sheet]:not([hidden])';
+      function overlayOpen() { try { return !!document.querySelector(OVERLAY_SEL); } catch (e) { return false; } }
+      var shown = false, t, paused = false;
+      function swallow(p) { if (p && typeof p.catch === 'function') p.catch(function () {}); }  // hide/resume/removeBanner reject if no banner — never throw
+      /* pause/resume hide & show the NATIVE banner overlay only — they do NOT touch the reserved
+         CSS strip (ads-on), so opening/closing a sheet never changes content height / scroll. */
+      function pause() { if (paused) return; paused = true; if (shown) { try { swallow(AdMob.hideBanner()); } catch (e) {} } }
+      function resume() { if (!paused || overlayOpen()) return; paused = false; if (shown) { try { swallow(AdMob.resumeBanner()); } catch (e) {} } }
+      function sync() { if (immersive) return; if (overlayOpen()) pause(); else resume(); }
+      function syncSoon() { clearTimeout(t); t = setTimeout(sync, 50); }
+      if (K) { K.adPause = pause; K.adResume = function () { setTimeout(sync, 0); }; }
+      try { new MutationObserver(syncSoon).observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class', 'style'] }); } catch (e) {}
+      /* NOTE: our banner is TOP_CENTER (top-anchored). The soft keyboard rises from the
+         BOTTOM and never reaches a top banner, and onResize() already ignores height-only
+         changes (keyboard). So we deliberately do NOT hide the banner on input focus —
+         doing so made the ad vanish every time the user tapped a slider/number field on a
+         calculator. (If a bottom-anchored banner is ever reintroduced, restore a focus-based
+         pause guarded to that position only.) */
+      /* GDPR/CCPA consent (Google UMP) — request BEFORE initializing/serving ads. For users
+         outside the EEA/UK/California a form isn't required and this resolves instantly; for
+         those who need it, the consent form is shown. Without this, ad fill is blocked/limited
+         in those regions. Set up the consent form once in the AdMob console (Privacy & messaging). */
+      /* npaMode = request NON-personalized ads when GDPR consent is required but NOT obtained,
+         or when the UMP consent flow errors. Default-safe: if we can't confirm consent, we do
+         NOT serve personalized ads (no tracking-grade profiling without a lawful basis). */
+      var npaMode = false;
+      function _consent() {
+        try {
+          if (AdMob.requestConsentInfo) {
+            return AdMob.requestConsentInfo({ tagForUnderAgeOfConsent: false }).then(function (info) {
+              var st = info && info.status;
+              if (st === 'REQUIRED' && info.isConsentFormAvailable && AdMob.showConsentForm) {
+                return AdMob.showConsentForm().then(function () {
+                  // re-check after the form — only personalize if the user explicitly consented
+                  return AdMob.requestConsentInfo({ tagForUnderAgeOfConsent: false })
+                    .then(function (i2) { npaMode = !(i2 && i2.status === 'OBTAINED'); })
+                    .catch(function () { npaMode = true; });
+                }).catch(function () { npaMode = true; });
+              }
+              if (st === 'REQUIRED') npaMode = true;   // consent required but no form → non-personalized only
+              // NOT_REQUIRED / OBTAINED → personalized allowed (npaMode stays false)
+            }).catch(function () { npaMode = true; });  // UMP failed → safest is non-personalized
+          }
+        } catch (e) { npaMode = true; }
+        return Promise.resolve();
+      }
+      _consent().then(function () { return AdMob.initialize({ initializeForTesting: ADS_TESTING }); }).then(function () {
+        function prep() { try { AdMob.prepareInterstitial && AdMob.prepareInterstitial({ adId: TEST_INTERSTITIAL, isTesting: INTERSTITIAL_TESTING, npa: npaMode }).catch(function () {}); } catch (e) {} }
+        if (K) {
+          K._prepInterstitial = prep;
+          /* ===== INTERSTITIAL POLICY — AdMob-safe + tunable =====
+             Full-screen ads run ONLY at explicit "seams" the user reaches deliberately — never
+             on a timer, never on app launch/return, never mid-action — so an ad can NEVER land
+             under an in-progress tap (the "my tap opened the advertiser" bug). The three enabled
+             seams (each toggleable):
+               • onExport       — after a file is SAVED/EXPORTED, shown at the user's NEXT in-app
+                                  navigation (a deliberate transition, not the instant of saving).
+               • onReaderExit   — when the user closes the PDF reader / exits the editor.
+               • onReadAloudEnd — when read-aloud finishes the doc, or the user ends the session.
+             Conversions intentionally do NOT trigger one (product decision). Every seam still
+             passes through ONE hard frequency floor (minGapMs). Tune at window.SnapJarKit._intCfg. */
+          var INT_CFG = K._intCfg = {
+            enabled: true,
+            minGapMs: 70000,      // hard floor — never two interstitials closer than ~70s
+            onExport: true,       // after save/export → at the next deliberate navigation
+            onReaderExit: true,   // closing the PDF reader / exiting the editor
+            onReadAloudEnd: true  // read-aloud finished the doc, or the user ended the session
+          };
+          K.maybeInterstitial = function (force) {
+            try {
+              if (!INT_CFG.enabled && !force) return;
+              // Cap against the last FULL-SCREEN ad of either kind. Checking only sj_int_ts let a
+              // cold-launch App Open be followed straight away by a reader-exit interstitial —
+              // two full-screens back to back. The App Open path already used Math.max; this
+              // makes the interstitial path symmetric.
+              var now = +new Date(), last = Math.max(+(localStorage.getItem('sj_int_ts') || 0), +(localStorage.getItem('sj_ao_ts') || 0));
+              if (!force && (now - last) < INT_CFG.minGapMs) return;   // global frequency cap — ALWAYS enforced
+              K._intDue = false;
+              localStorage.setItem('sj_int_ts', now);
+              AdMob.showInterstitial && AdMob.showInterstitial().then(prep).catch(prep);
+            } catch (e) {}
+          };
+          /* SEAM 1 — after an export/save (K._intDue is set in the save flow), show at the user's
+             NEXT genuine in-app navigation. Only in-app anchor links count, so buttons and the
+             Scan tab (opens a sheet, not a navigation) never trigger a full-screen ad. */
+          document.addEventListener('click', function (e) {
+            try {
+              if (!INT_CFG.enabled || !INT_CFG.onExport || !K._intDue) return;
+              var t = e.target; if (!t || !t.closest) return;
+              if (t.closest('a[href^="/"]')) setTimeout(function () { K.maybeInterstitial(); }, 0);  // still gap-capped inside
+            } catch (e) {}
+          }, true);
+          /* SEAMS 2 & 3 — the PDF tool calls these at reader/editor exit and at read-aloud end. */
+          K.adTaskExit = function () { if (INT_CFG.enabled && INT_CFG.onReaderExit) K.maybeInterstitial(); };
+          K.adReadAloudEnd = function () { if (INT_CFG.enabled && INT_CFG.onReadAloudEnd) K.maybeInterstitial(); };
+        }
+        prep();
+        /* ===== APP OPEN ADS — native AppOpenPlugin (the JS admob plugin has none) =====
+           Full-screen ad shown when the user RETURNS to the app from the background — NEVER
+           over the initial cold launch (we only fire after a real background→foreground), and
+           never while a sheet/modal is open or right after another full-screen ad. Preloaded
+           and reloaded after each show; frequency-capped so rapid app-switching can't spam it. */
+        try {
+          var AppOpen = K && K.plugin ? K.plugin('AppOpenAd') : null;
+          if (AppOpen && AppOpen.load) {
+            var REAL_APP_OPEN = 'ca-app-pub-4351869860119610/9389012222';   // ✓ live App Open unit
+            var APP_OPEN_ID = (!ADS_TESTING && REAL_APP_OPEN) ? REAL_APP_OPEN : 'ca-app-pub-3940256099942544/9257395921';
+            var aoReady = false, aoWasBg = false, AO_GAP_MS = 60000;
+            // show ONE app-open ad on cold launch too (the user expects an ad at opening) — once per
+            // app session so page navigations don't re-trigger it.
+            var aoColdPending = false; try { aoColdPending = !sessionStorage.getItem('sj_ao_cold'); } catch (e) {}
+            function aoShowCold() {
+              if (!aoColdPending || !aoReady) return;
+              /* The user arrived with an explicit job — they shared a link or opened a file with
+                 SnapJar. Throwing a full-screen ad over the thing they asked for is a bad trade:
+                 it buries the action, and an ad that interrupts a user-initiated task is exactly
+                 what Play's ads policy is written about. Skip it for intent launches. */
+              if (window.__sjIncoming) return;
+              // only when the app is truly foreground + interactive (avoids AdMob's "background ad" flag)
+              if (document.visibilityState !== 'visible') return;
+              aoColdPending = false;
+              try { sessionStorage.setItem('sj_ao_cold', '1'); } catch (e) {}
+              setTimeout(function () {
+                try {
+                  if (document.visibilityState !== 'visible' || overlayOpen()) return;
+                  var now = +new Date(), lastFs = Math.max(+(localStorage.getItem('sj_ao_ts') || 0), +(localStorage.getItem('sj_int_ts') || 0));
+                  if (now - lastFs < AO_GAP_MS) return;
+                  localStorage.setItem('sj_ao_ts', now); AppOpen.show();
+                } catch (e) {}
+              }, 700);
+            }
+            /* npa mirrors the banner/interstitial paths: if the user declined (or UMP errored, which
+               fails closed to npaMode), the app-open request must be non-personalised too. */
+            function aoLoad() { try { AppOpen.load({ adId: APP_OPEN_ID, keywords: adKeywords(), contentUrl: adContentUrl(), npa: !!npaMode }); } catch (e) {} }
+            if (AppOpen.addListener) {
+              AppOpen.addListener('appOpenLoaded', function () { aoReady = true; aoShowCold(); });
+              AppOpen.addListener('appOpenFailedToLoad', function () { aoReady = false; });
+              AppOpen.addListener('appOpenDismissed', function () { aoReady = false; aoLoad(); });   // preload the next
+              AppOpen.addListener('appOpenFailedToShow', function () { aoReady = false; aoLoad(); });
+            }
+            aoLoad();
+            var _App2 = K.plugin('App');
+            if (_App2 && _App2.addListener) _App2.addListener('appStateChange', function (s) {
+              try {
+                if (!s) return;
+                if (!s.isActive) { aoWasBg = true; return; }            // went to background
+                if (!aoWasBg) return;                                    // active without prior background = cold start → skip
+                aoWasBg = false;
+                var now = +new Date();
+                var lastFs = Math.max(+(localStorage.getItem('sj_ao_ts') || 0), +(localStorage.getItem('sj_int_ts') || 0));
+                if (now - lastFs < AO_GAP_MS) return;                    // don't stack with a recent full-screen ad
+                if (overlayOpen()) return;                               // a sheet/modal is open → never cover it
+                if (!aoReady) { aoLoad(); return; }                      // nothing preloaded → prep for next return
+                localStorage.setItem('sj_ao_ts', now);
+                AppOpen.show();
+              } catch (e) {}
+            });
+          }
+        } catch (e) {}
+        if (immersive) { try { swallow(AdMob.removeBanner()); } catch (e) {} setAdH(0); return; }
+        /* The native banner PERSISTS across page navigations, but on a new page showBanner()
+           may reject ("already shown") → don't tear down the reserved space. Once the ad has
+           shown even once (flag), reserve the top space IMMEDIATELY on every page so the
+           header never overlaps the ad during navigation. */
+        /* (top strip is reserved at init only when a banner is showing THIS session — see
+           reservedH()/adShowing above — so a cold launch with no fill shows no empty gap) */
+        function showAd() {
+          /* TOP_CENTER, margin 0 → the banner lives at the very TOP (below the status bar).
+             The bottom nav is therefore NEVER touched (opposite end of the screen). */
+          try { swallow(AdMob.showBanner({ adId: TEST_BANNER, adSize: 'LARGE_BANNER', position: 'TOP_CENTER', margin: 0, isTesting: BANNER_TESTING, npa: npaMode, keywords: adKeywords(), contentUrl: adContentUrl() })
+            .then(function () { shown = true; if (overlayOpen()) { paused = true; swallow(AdMob.hideBanner()); } /* reserve happens on bannerAdLoaded (actual fill) → no empty gap */ })
+            .catch(function () { /* keep the reserved space — the banner usually persists from a prior page */ })); } catch (e) {}
+        }
+        /* FOLDABLE/ROTATE: when the display geometry changes (fold↔unfold, rotate), the
+           WebView resizes but the banner keeps its OLD margin → it lands on the navbar.
+           Re-place it with a freshly-measured margin. Width change distinguishes a
+           fold/rotate from the keyboard (handled separately above). */
+        var lastW = window.innerWidth, lastH = window.innerHeight, rzT;
+        function reposition() { if (immersive) return; try { swallow(AdMob.removeBanner()); } catch (e) {} shown = false; paused = false; showAd(); }  /* keep ads-on; only re-place the native overlay */
+        function onResize() {
+          var w = window.innerWidth;
+          if (Math.abs(w - lastW) < 40) return; // ONLY reposition on WIDTH change (fold/rotate) — not height (keyboard or the ad's own resize), which caused the banner to re-place itself badly
+          lastW = w; lastH = window.innerHeight; clearTimeout(rzT); rzT = setTimeout(reposition, 500);
+        }
+        window.addEventListener('resize', onResize);
+        if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) window.screen.orientation.addEventListener('change', function () { clearTimeout(rzT); rzT = setTimeout(reposition, 450); });
+        /* IN-CONTENT MREC (Option 4): a big 300x250 ad shown ONLY where there's genuine empty
+           space — the Recent/My Files empty state. It replaces the top banner there (one ad at
+           a time = policy-safe). Pages call these; we keep the height OUT of the persisted
+           banner height so it never bloats other pages' top space. */
+        K.adMrec = function () {
+          try { swallow(AdMob.removeBanner()); } catch (e) {}
+          shown = false; paused = false; body.classList.remove('ads-on'); body.classList.add('mrec-on'); setAdH(0);
+          try { swallow(AdMob.showBanner({ adId: TEST_BANNER, adSize: 'MEDIUM_RECTANGLE', position: 'CENTER', margin: 0, isTesting: BANNER_TESTING, npa: npaMode })); } catch (e) {}
+        };
+        K.adRestore = function () {
+          if (!body.classList.contains('mrec-on')) return;
+          body.classList.remove('mrec-on');
+          try { swallow(AdMob.removeBanner()); } catch (e) {}
+          shown = false; paused = false;
+          try { var s = +(localStorage.getItem('sj_adh') || 0); if (!(s >= 100 && s <= 120)) s = 100; setAdH(s); } catch (e) { setAdH(100); }
+          showAd();
+        };
+        showAd();
+        /* ===== AUTO-REFRESH — DISPLAY (banner) ads ONLY =====
+           Active users open few screens, so ad REQUESTS stay low. Every 45s we request a
+           FRESH banner creative into the SAME reserved strip. This is the safe way to lift
+           requests/impressions:
+             • Display-only — it NEVER triggers an interstitial (no full-screen interrupt).
+             • NEVER reloads the page — only the native banner creative swaps, so the user's
+               scroll, inputs, PDF reading position, edits and notes are 100% preserved.
+             • The reserved strip (--ad-h / .ads-on) stays put, so there is NO layout shift.
+           Skipped while the app is backgrounded, a sheet/modal/overlay is open, or the in-
+           content MREC mode is active — so we never refresh under an overlay or off-screen.
+           It DOES re-request even if the previous request didn't fill: each cycle is a fresh
+           fill chance, which is exactly how we lift requests + match rate. 45s respects
+           AdMob's 30–120s refresh policy. NOTE: leave "auto-refresh" OFF in the AdMob console
+           for this unit — the app drives the refresh here, so enabling both would double-refresh. */
+        var BANNER_CFG = K._bannerCfg = { enabled: true, refreshMs: 45000 };  // tunable (also via window.SnapJarKit._bannerCfg)
+
+        /* ===== NO-FILL RETRY (exponential backoff) =====
+           A new/unpublished app gets a LOW match rate — most requests come back "no fill"
+           (observed: 20%, i.e. 3 fills per 15 requests). Waiting the full refreshMs after a
+           failure leaves the user staring at an empty strip for 45s, so we retry quickly
+           instead: 10s → 20s → 40s, then hold at 40s. POLICY: AdMob's 30s minimum applies to
+           a DISPLAYED banner; a request that never filled showed nothing, so retrying it
+           sooner is allowed. The backoff resets the moment a fill lands.
+           All the refresh guards apply here too — while blocked (backgrounded, sheet open,
+           MREC mode) we re-arm rather than request, so we never burn a request off-screen. */
+        var RETRY_MS = [10000, 20000, 40000], retryN = 0, retryT = null, lastReqTs = 0;
+        function canRequest() {
+          if (!BANNER_CFG.enabled || immersive) return false;
+          try { if (document.hidden) return false; } catch (e) {}
+          if (paused || overlayOpen()) return false;
+          if (body.classList.contains('mrec-on')) return false;
+          return true;
+        }
+        /* Single funnel for BOTH the 45s cycle and the retry timer: an 8s floor keeps the two
+           from firing back-to-back and double-requesting (which would inflate request counts
+           and drag the match rate down further). */
+        function requestAd() {
+          var now = +new Date();
+          if (now - lastReqTs < 8000) return;
+          lastReqTs = now;
+          showAd();
+        }
+        function cancelRetry() { if (retryT) { clearTimeout(retryT); retryT = null; } }
+        function scheduleRetry() {
+          cancelRetry();
+          var wait = RETRY_MS[Math.min(retryN, RETRY_MS.length - 1)];
+          retryN++;
+          retryT = setTimeout(function () {
+            retryT = null;
+            if (!canRequest()) { scheduleRetry(); return; }   // blocked → re-arm, don't waste the request
+            requestAd();
+          }, wait);
+        }
+        try { if (AdMob.addListener) {
+          AdMob.addListener('bannerAdLoaded', function () { retryN = 0; cancelRetry(); });   // filled → back to the calm 45s cadence
+          AdMob.addListener('bannerAdFailedToLoad', function () { if (immersive) return; scheduleRetry(); });
+        } } catch (e) {}
+
+        setInterval(function () {
+          if (!BANNER_CFG.enabled) return;                              // master switch for the auto-requester
+          if (immersive) return;
+          try { if (document.hidden) return; } catch (e) {}            // app in background → don't waste requests
+          if (paused || overlayOpen()) return;                          // a sheet/modal is open → don't refresh under it
+          if (body.classList.contains('mrec-on')) return;               // MREC mode has its own ad
+          /* Reload IN PLACE: with a banner already shown, showBanner() routes to the plugin's
+             updateExistingAdView() which loads a fresh ad into the SAME native AdView. We must
+             NOT removeBanner() first — removeBanner async-nulls the native AdView while showBanner
+             async-calls loadAd on it → NullPointerException that CRASHES the whole app (this was
+             the "app quits" bug). In-place reload is also smoother (no teardown/flicker) and still
+             re-requests every cycle even on a prior no-fill. */
+          requestAd();   // shared funnel — 8s floor stops this colliding with a pending retry
+        }, BANNER_CFG.refreshMs);
+      }).catch(function () {});
+    })();
+  </script>}
+
+  <section class="trust-strip">
+    <div class="wrap trust-in">
+      <div class="trust-lead">🛡️ <b>Built for privacy.</b> Every tool runs entirely on your device — your files never reach a server.</div>
+      <div class="trust-badges">
+        <span class="tb">🔒 On-device processing</span>
+        <span class="tb">🙈 We never see your files</span>
+        <span class="tb">🇪🇺 GDPR &amp; DPDP friendly</span>
+        <span class="tb">✅ No sign-up</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap foot-in">
+      <div class="foot-col" style="max-width:280px">
+        <a class="brand" href="/" style="margin-bottom:10px"><span class="logo">⚡</span> SnapJar</a>
+        <p style="color:var(--dim)">Free PDF, scan &amp; read-aloud tools that run 100% on your device. No signup, no upload — your files never leave your phone.</p>
+        <nav class="foot-legal" aria-label="Legal"><a href="/about">About</a><a href="/privacy-policy">Privacy</a><a href="/terms">Terms</a><a href="#" onclick="return openCookiePrefs()">Cookie settings</a></nav>
+      </div>
+      <div class="foot-col">
+        <h4>Scan &amp; Read</h4>
+        <a href="/tools/scanner">Scan Document</a>
+        <a href="/tools/qr-scan">Scan QR</a>
+        <a href="/tools/text-scan">Scan to Text (OCR)</a>
+        <a href="/tools/pdf-studio?open=1">PDF Reader &amp; Listen</a>
+      </div>
+      <div class="foot-col">
+        <h4>PDF Tools</h4>
+        <a href="/tools/pdf-tools">Merge PDF</a>
+        <a href="/tools/compress-pdf">Compress PDF</a>
+        <a href="/tools/organize-pdf">Organize PDF</a>
+        <a href="/tools/split-pdf">Split PDF</a>
+        <a href="/#pdf-tools">All PDF tools →</a>
+      </div>
+      <div class="foot-col">
+        <h4>Create &amp; Convert</h4>
+        <a href="/tools/jpg-to-pdf">JPG → PDF</a>
+        <a href="/tools/pdf-to-jpg">PDF → JPG</a>
+        <a href="/tools/text-to-pdf">Text → PDF</a>
+        <a href="/tools/word-to-pdf">Word → PDF</a>
+        <a href="/tools/pdf-to-word">PDF → Word</a>
+      </div>
+      <div class="foot-col">
+        <h4>Edit</h4>
+        <a href="/tools/pdf-studio">PDF Editor</a>
+        <a href="/tools/pdf-studio?new=1">Write / Notes</a>
+        <a href="/tools/watermark-pdf">Watermark PDF</a>
+        <a href="/tools/add-page-numbers">Add Page Numbers</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <p class="legal">© 2026 SnapJar. All tools run locally on your device; no files are uploaded to any server.</p>
+    </div>
+  </footer>
+
+  {!IS_APP && (
+    <div id="cookie-banner" class="cookie-banner" hidden role="dialog" aria-label="Cookie notice">
+      <div class="cb-ic" aria-hidden="true">🍪</div>
+      <div class="cb-body">
+        <p class="cb-lead">SnapJar processes your files on your device.</p>
+        <p class="cb-text">We use cookies, including marketing cookies, to keep our tools free. <a href="/privacy-policy">Privacy&nbsp;Policy</a></p>
+        <div class="cb-actions">
+          <button id="cb-decline" type="button" class="cb-btn ghost">Reject</button>
+          <button id="cb-accept" type="button" class="cb-btn">Accept</button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <script is:inline>
+    (function () {
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      function sync(){ btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+      sync();
+      btn.addEventListener('click', function () {
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('theme', next); } catch (e) {}
+        sync();
+      });
+    })();
+
+    // Products mega menu — click to open, Esc / outside-click to close (keyboard-safe)
+    (function () {
+      var mb = document.getElementById('megaBtn'), mp = document.getElementById('megaPanel');
+      if (!mb || !mp) return;
+      function close(){ mp.classList.remove('open'); mb.setAttribute('aria-expanded','false'); }
+      mb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = mp.classList.toggle('open');
+        mb.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', function (e) {
+        if (!mp.contains(e.target) && e.target !== mb) close();
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+      mp.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    })();
+  </script>
+
+  <script is:inline>
+    // Cookie consent — records the choice and gates non-essential (ad) cookies.
+    (function () {
+      var KEY = 'snapjar-consent', saved = null;
+      try { saved = localStorage.getItem(KEY); } catch (e) {}
+      window.__consent = saved;
+      var b = document.getElementById('cookie-banner');
+      if (!saved && b) b.hidden = false;
+      function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} window.__consent = v; if (b) b.hidden = true; }
+      var a = document.getElementById('cb-accept'), d = document.getElementById('cb-decline');
+      if (a) a.onclick = function () { set('accepted'); };
+      if (d) d.onclick = function () { set('declined'); };
+      window.openCookiePrefs = function () { if (b) b.hidden = false; return false; };
+    })();
+  </script>
+
+  {!IS_APP && (
+    <script is:inline>
+      {/* Netlify Identity: only load the widget when an invite/recovery token is
+         present in the URL (keeps normal page loads fast). It then lets you set a
+         password and bounces you to the CMS. Stripped entirely from the app build —
+         the app has no CMS/login, so no reference to identity.netlify.com ships. */}
+      (function () {
+        if (location.hash && /(invite_token|recovery_token|confirmation_token|email_change_token)=/.test(location.hash)) {
+          var s = document.createElement('script');
+          s.src = 'https://identity.netlify.com/v1/netlify-identity-widget.js';
+          s.onload = function () {
+            if (!window.netlifyIdentity) return;
+            window.netlifyIdentity.on('init', function (user) {
+              if (!user) window.netlifyIdentity.on('login', function () { location.href = '/admin/'; });
+            });
+          };
+          document.body.appendChild(s);
+        }
+      })();
+    </script>
+  )}
+
+  {!IS_APP && <script is:inline>
+    /* ===== Custom select — replaces the un-themeable native OS dropdown popup
+       with a styled popover (WEB ONLY). In the APP we use a bottom-sheet picker
+       instead (see the sjsel script above) for consistency with the other sheets.
+       The native <select> stays the source of
+       truth (existing code reads .value / listens for 'change'); we keep it in
+       sync. Defensive: any failure leaves the original native select working. */
+    (function () {
+      var SVG_CHEV = '<svg class="csel-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+      var SVG_TICK = '<svg class="csel-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>';
+      var openInst = null;
+
+      function splitLabel(text) {
+        // "192 kbps — recommended (music & speech)" -> {title, desc}
+        var m = (text || '').split(/\s+[—–-]\s+/);
+        if (m.length > 1) return { title: m[0].trim(), desc: m.slice(1).join(' — ').trim() };
+        return { title: (text || '').trim(), desc: '' };
+      }
+      function fillNode(node, parts) {
+        var b = document.createElement('b'); b.textContent = parts.title || '—'; node.appendChild(b);
+        if (parts.desc) { var s = document.createElement('small'); s.textContent = parts.desc; node.appendChild(s); }
+      }
+
+      function enhance(sel) {
+        if (sel.__csel || sel.multiple || sel.size > 1 || sel.hasAttribute('data-no-csel')) return;
+        sel.__csel = true;
+
+        var wrap = document.createElement('div'); wrap.className = 'csel';
+        sel.parentNode.insertBefore(wrap, sel);
+        wrap.appendChild(sel);
+        sel.classList.add('csel-native');
+        sel.setAttribute('tabindex', '-1'); sel.setAttribute('aria-hidden', 'true');
+
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'csel-btn';
+        btn.setAttribute('aria-haspopup', 'listbox'); btn.setAttribute('aria-expanded', 'false');
+        var lblEl = (sel.id && document.querySelector('label[for="' + sel.id + '"]')) || sel.closest('label');
+        var lblTxt = sel.getAttribute('aria-label') || (lblEl && lblEl.textContent.trim());
+        if (lblTxt) btn.setAttribute('aria-label', lblTxt);
+        var lblNode = document.createElement('span'); lblNode.className = 'csel-lbl';
+        btn.appendChild(lblNode);
+        btn.insertAdjacentHTML('beforeend', SVG_CHEV);
+        wrap.appendChild(btn);
+
+        var pop = document.createElement('div');
+        pop.className = 'csel-pop'; pop.setAttribute('role', 'listbox');
+        document.body.appendChild(pop);
+
+        var inst = { sel: sel, btn: btn, pop: pop, active: -1 };
+
+        function syncBtn() {
+          var o = sel.options[sel.selectedIndex];
+          lblNode.innerHTML = '';
+          fillNode(lblNode, splitLabel(o ? o.textContent : ''));
+        }
+
+        function buildPop() {
+          pop.innerHTML = '';
+          for (var i = 0; i < sel.options.length; i++) {
+            (function (o, idx) {
+              var opt = document.createElement('button');
+              opt.type = 'button'; opt.className = 'csel-opt'; opt.setAttribute('role', 'option');
+              opt.setAttribute('aria-selected', idx === sel.selectedIndex ? 'true' : 'false');
+              var t = document.createElement('span'); t.className = 'csel-opt-txt';
+              fillNode(t, splitLabel(o.textContent));
+              opt.appendChild(t);
+              opt.insertAdjacentHTML('beforeend', SVG_TICK);
+              opt.addEventListener('click', function () { pick(idx); });
+              opt.addEventListener('mousemove', function () { setActive(idx); });
+              pop.appendChild(opt);
+            })(sel.options[i], i);
+          }
+        }
+        function setActive(i) {
+          var opts = pop.children;
+          if (inst.active >= 0 && opts[inst.active]) opts[inst.active].classList.remove('active');
+          inst.active = i;
+          if (i >= 0 && opts[i]) { opts[i].classList.add('active'); opts[i].scrollIntoView({ block: 'nearest' }); }
+        }
+        function place() {
+          var r = btn.getBoundingClientRect();
+          pop.style.width = r.width + 'px';
+          pop.style.left = r.left + 'px';
+          var h = pop.offsetHeight, gap = 6;
+          var below = window.innerHeight - r.bottom, above = r.top;
+          if (below < h + gap && above > below) {
+            pop.classList.add('up'); pop.style.top = Math.max(gap, r.top - h - gap) + 'px';
+          } else {
+            pop.classList.remove('up'); pop.style.top = (r.bottom + gap) + 'px';
+          }
+        }
+        function open() {
+          if (openInst && openInst !== inst) openInst.close();
+          buildPop();
+          place();                    // offsetHeight is valid while still at opacity 0
+          pop.classList.add('open');  // then animate in from the placed position
+          btn.setAttribute('aria-expanded', 'true');
+          setActive(sel.selectedIndex);
+          openInst = inst;
+          window.addEventListener('scroll', onScroll, true);
+          window.addEventListener('resize', place);
+        }
+        function close() {
+          pop.classList.remove('open'); btn.setAttribute('aria-expanded', 'false');
+          window.removeEventListener('scroll', onScroll, true);
+          window.removeEventListener('resize', place);
+          if (openInst === inst) openInst = null;
+        }
+        function onScroll() { place(); }
+        function pick(i) {
+          if (i !== sel.selectedIndex) {
+            sel.selectedIndex = i;
+            sel.dispatchEvent(new Event('input', { bubbles: true }));
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          syncBtn(); close(); btn.focus();
+        }
+        inst.close = close;
+
+        btn.addEventListener('click', function () {
+          if (pop.classList.contains('open')) close(); else open();
+        });
+        btn.addEventListener('keydown', function (e) {
+          var isOpen = pop.classList.contains('open');
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!isOpen) { open(); return; }
+            var n = pop.children.length, next = inst.active < 0 ? 0 : inst.active + (e.key === 'ArrowDown' ? 1 : -1);
+            setActive((next + n) % n);
+          } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (!isOpen) open(); else if (inst.active >= 0) pick(inst.active);
+          } else if (e.key === 'Escape') {
+            if (isOpen) { e.preventDefault(); close(); }
+          } else if (e.key === 'Home' && isOpen) { e.preventDefault(); setActive(0); }
+          else if (e.key === 'End' && isOpen) { e.preventDefault(); setActive(pop.children.length - 1); }
+        });
+        pop.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); close(); btn.focus(); } });
+
+        // outside click / native change / dynamic option changes
+        document.addEventListener('pointerdown', function (e) {
+          if (pop.classList.contains('open') && !pop.contains(e.target) && !btn.contains(e.target)) close();
+        });
+        sel.addEventListener('change', syncBtn);
+        try {
+          new MutationObserver(function () { syncBtn(); if (pop.classList.contains('open')) buildPop(); })
+            .observe(sel, { childList: true });
+        } catch (e) {}
+
+        syncBtn();
+      }
+
+      function init() {
+        var sels = document.querySelectorAll('select');
+        for (var i = 0; i < sels.length; i++) { try { enhance(sels[i]); } catch (e) {} }
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+      else init();
+    })();
+  </script>}
+{/* NotificationDirector — app only. Loads after SnapJarKit so it can use K.plugin(). */}
+{IS_APP && <script is:inline src="/assets/notify.js" defer></script>}
+{/* Readability loader. Two constraints force this exact shape:
+    1. SnapJarKit lives in an `is:inline` script, where a bare specifier like
+       '@mozilla/readability' can never resolve at runtime — so the import must be in a BUNDLED
+       script that Astro rewrites at build time.
+    2. Astro only bundles <script> tags at template top level; nested inside a {conditional}
+       it is left inline, which silently reintroduces problem 1.
+    Hence: unconditional and unwrapped. The import stays dynamic, so the parser is fetched only
+    when someone actually opens an article link. */}
+<script>
+  window.__sjLoadReadability = function () {
+    return import('@mozilla/readability').then(function (m) { return m.Readability; });
+  };
+</script>
+</body>
+</html>

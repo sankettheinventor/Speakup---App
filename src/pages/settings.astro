@@ -1,0 +1,145 @@
+---
+import Base from '../layouts/Base.astro';
+const title = 'Settings — SnapJar';
+const description = 'SnapJar settings, help, and about.';
+---
+<Base title={title} description={description}>
+  <main>
+    <div class="wrap set-page">
+      <h1 class="set-h1">Settings</h1>
+
+      <div class="set-group" role="list">
+        <a class="set-row" role="listitem" href="mailto:contact.snapjar@gmail.com?subject=SnapJar%20feature%20idea&body=I'd%20love%20SnapJar%20to..." data-ext="1">
+          <span class="set-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/></svg></span>
+          <span class="set-tx"><b>Suggest a feature</b><small>Tell us what to build next</small></span>
+          <span class="set-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="set-row" role="listitem" href="/help">
+          <span class="set-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.4 1c0 1.9-2.8 2.5-2.8 2.5"/><path d="M12 17h.01"/></svg></span>
+          <span class="set-tx"><b>Help &amp; FAQ</b><small>Quick answers to common questions</small></span>
+          <span class="set-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+        <button class="set-row" role="listitem" id="setRate" type="button">
+          <span class="set-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8L6.6 19.6l1-6L3.3 9.4l6-.9L12 3Z"/></svg></span>
+          <span class="set-tx"><b>Rate SnapJar</b><small>Enjoying the app? Leave a review</small></span>
+          <span class="set-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </button>
+      </div>
+
+      <div class="set-glabel">Legal</div>
+      <div class="set-group" role="list">
+        <a class="set-row" role="listitem" href="/privacy-policy">
+          <span class="set-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"/><path d="m9.5 12 1.8 1.8L15 10"/></svg></span>
+          <span class="set-tx"><b>Privacy Policy</b><small>Everything stays on your device</small></span>
+          <span class="set-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+        <button class="set-row" role="listitem" id="setAdPrivacy" type="button" hidden>
+          <span class="set-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"/><path d="M12 9v4M12 16h.01"/></svg></span>
+          <span class="set-tx"><b>Ad privacy choices</b><small>Change or withdraw your ad consent</small></span>
+          <span class="set-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </button>
+        <a class="set-row" role="listitem" href="/terms">
+          <span class="set-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span>
+          <span class="set-tx"><b>Terms of Use</b><small>The rules for using SnapJar</small></span>
+          <span class="set-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="set-row" role="listitem" href="/licenses">
+          <span class="set-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"/><path d="M14 3v6h6M9.5 14 8 15.5 9.5 17M14.5 14 16 15.5 14.5 17"/></svg></span>
+          <span class="set-tx"><b>Open-source licenses</b><small>The software that powers SnapJar</small></span>
+          <span class="set-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+      </div>
+
+      <div class="set-about">
+        <div class="set-logo">⚡</div>
+        <div class="set-ver" id="setVer">SnapJar · v1.0.3</div>
+        <div class="set-tag">Made with 💜 — 100% on your device</div>
+      </div>
+
+      <!-- Hidden diagnostics, revealed by tapping the version 5× (the standard Android
+           dev-options gesture). Not discoverable by accident, so it's safe to ship. -->
+      <div class="set-dev" id="setDev" hidden>
+        <div class="set-glabel">Notification test</div>
+        <div class="set-group" role="list">
+          <button class="set-row" type="button" data-n="CONVERSION_DONE"><span class="set-tx"><b>Task complete (P0)</b><small>Fires immediately when backgrounded</small></span></button>
+          <button class="set-row" type="button" data-n="SCAN_UNSAVED"><span class="set-tx"><b>Unfinished scan (P1)</b><small>Normally delayed 2h — sent now</small></span></button>
+          <button class="set-row" type="button" data-n="HIGHLIGHT_MILESTONE"><span class="set-tx"><b>Highlight milestone (P3)</b><small>Tips channel</small></span></button>
+          <button class="set-row" type="button" data-n="LAPSE_7D"><span class="set-tx"><b>Re-engagement (P5)</b><small>Reminders channel</small></span></button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <style>
+    .set-page{ max-width:640px; margin:0 auto; padding-top:var(--s4); padding-bottom:var(--s7); }
+    .set-h1{ font-size:clamp(28px,8vw,36px); font-weight:800; letter-spacing:-.03em; color:var(--app-ink,var(--txt)); margin-bottom:var(--s5); }
+    .set-glabel{ font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--app-dim,var(--dim)); margin:var(--s6) 0 var(--s3) 4px; }
+    .set-group{ display:flex; flex-direction:column; gap:2px; background:var(--app-tile,var(--surface)); border-radius:20px; box-shadow:var(--app-shadow); overflow:hidden; padding:6px; }
+    .set-row{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:12px 12px; border:0; background:transparent; color:var(--app-ink,var(--txt)); font:inherit; cursor:pointer; border-radius:14px; transition:background .12s; }
+    .set-row:active{ background:color-mix(in srgb,var(--app-ink,var(--txt)) 6%,transparent); }
+    .set-ic{ width:42px; height:42px; flex:0 0 auto; border-radius:12px; display:grid; place-items:center; color:var(--app-accent,var(--brand)); background:color-mix(in srgb,var(--app-accent,var(--brand)) 11%,transparent); }
+    .set-ic svg{ width:21px; height:21px; }
+    .set-tx{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+    .set-tx b{ font-size:15.5px; font-weight:700; letter-spacing:-.01em; }
+    .set-tx small{ font-size:12.5px; color:var(--app-dim,var(--dim)); }
+    .set-chev{ flex:0 0 auto; color:var(--app-dim,var(--dim)); opacity:.55; }
+    .set-chev svg{ width:19px; height:19px; }
+    .set-about{ text-align:center; margin-top:var(--s7); }
+    .set-logo{ width:56px; height:56px; margin:0 auto 12px; border-radius:16px; display:grid; place-items:center; font-size:26px; background:linear-gradient(135deg,#c026d3,#7c3aed); box-shadow:0 12px 28px -10px #7c3aed; }
+    .set-ver{ font-size:14px; font-weight:800; color:var(--app-ink,var(--txt)); letter-spacing:-.01em; }
+    .set-tag{ font-size:12.5px; color:var(--app-dim,var(--dim)); margin-top:4px; }
+  </style>
+
+  <script>
+    (function () {
+      var rate = document.getElementById('setRate');
+      var url = 'https://play.google.com/store/apps/details?id=com.snapjar.app';
+      if (rate) rate.addEventListener('click', function () {
+        try { window.open('market://details?id=com.snapjar.app', '_system'); }
+        catch (e) { try { window.open(url, '_system'); } catch (e2) { location.href = url; } }
+      });
+
+      /* GDPR/ePrivacy: withdrawing consent must be as easy as giving it. Reveal the ad-privacy
+         row only where a privacy-options form actually exists (i.e. consent regions), so users
+         elsewhere aren't shown a control that does nothing. */
+      /* tap the version 5× → notification tester (bypasses caps/quiet-hours so it can be
+         verified on demand; the real triggers still obey the full constitution) */
+      (function () {
+        var ver = document.getElementById('setVer'), dev = document.getElementById('setDev'), n = 0, t = 0;
+        if (!ver || !dev) return;
+        ver.addEventListener('click', function () {
+          clearTimeout(t); t = setTimeout(function () { n = 0; }, 1200);
+          if (++n < 5) return;
+          n = 0; dev.hidden = false;
+          if (window.SnapJarKit && SnapJarKit.toast) SnapJarKit.toast('Notification tester unlocked', 'ok');
+          dev.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        dev.addEventListener('click', function (e) {
+          var b = e.target.closest && e.target.closest('button[data-n]'); if (!b) return;
+          if (!window.SJNotify || !window.SJNotify._test) return;
+          window.SJNotify.askPermission().then(function (ok) {
+            if (!ok) { if (window.SnapJarKit) SnapJarKit.toast('Allow notifications first', 'err'); return; }
+            window.SJNotify._test(b.getAttribute('data-n'), { n: 10, doc: 'Think and Grow Rich' }).then(function (sent) {
+              if (window.SnapJarKit) SnapJarKit.toast(sent ? 'Sent — check your shade' : 'Could not send', sent ? 'ok' : 'err');
+            });
+          });
+        });
+      })();
+
+      var K = window.SnapJarKit, ad = document.getElementById('setAdPrivacy');
+      var AdMob = (K && K.plugin) ? K.plugin('AdMob') : null;
+      if (ad && AdMob && AdMob.showPrivacyOptionsForm) {
+        if (AdMob.requestConsentInfo) {
+          AdMob.requestConsentInfo().then(function (info) {
+            if (info && info.isConsentFormAvailable) ad.hidden = false;
+          }).catch(function () {});
+        }
+        ad.addEventListener('click', function () {
+          AdMob.showPrivacyOptionsForm().catch(function () {
+            if (K && K.toast) K.toast('Ad privacy options aren’t available in your region', 'info');
+          });
+        });
+      }
+    })();
+  </script>
+</Base>

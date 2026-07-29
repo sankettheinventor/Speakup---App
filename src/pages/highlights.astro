@@ -1,0 +1,197 @@
+---
+import Base from '../layouts/Base.astro';
+const title = 'My Highlights — SnapJar';
+const description = 'All your saved highlights, organized by document — 100% on your device.';
+---
+<Base title={title} description={description}>
+  <main>
+    <div class="wrap hl-lib">
+      <div class="hl-lib-top">
+        <button class="hl-lib-back" id="hlLibBack" type="button" hidden aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="hl-lib-htx">
+          <h1 class="hl-lib-h" id="hlLibH">My Highlights</h1>
+          <div class="hl-lib-sub" id="hlLibSub"></div>
+        </div>
+      </div>
+      <div id="hlLibBody"></div>
+    </div>
+  </main>
+
+  <!-- 3-dots action menu (rename / delete) -->
+  <div class="hl-act" id="hlAct" hidden>
+    <div class="hl-act-card">
+      <div class="hl-act-grab"></div>
+      <div class="hl-act-h" id="hlActName">Highlight</div>
+      <button class="hl-act-b" id="hlActRename" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Rename</span></button>
+      <button class="hl-act-b hl-act-del" id="hlActDelete" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg><span>Delete</span></button>
+      <button class="hl-act-cancel" id="hlActCancel" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <style is:global>
+    /* is:global — folder/highlight cards are built in JS (createElement), which don't get Astro's
+       scoped data-cid, so scoped CSS would never reach them. */
+    .hl-lib{ max-width:760px; margin:0 auto; padding-top:var(--s3); }
+    .hl-lib-top{ display:flex; align-items:center; gap:12px; margin-bottom:var(--s5); }
+    .hl-lib-back{ width:42px; height:42px; flex:0 0 auto; border:0; border-radius:13px; background:var(--app-tile,var(--surface)); color:var(--app-ink,var(--txt)); box-shadow:var(--app-shadow); display:grid; place-items:center; cursor:pointer; transition:transform .12s; }
+    .hl-lib-back[hidden]{ display:none; }
+    .hl-lib-back svg{ width:19px; height:19px; }
+    .hl-lib-back:active{ transform:scale(.92); }
+    .hl-lib-htx{ min-width:0; }
+    .hl-lib-h{ font-size:clamp(24px,7vw,32px); font-weight:800; letter-spacing:-.03em; line-height:1.05; color:var(--app-ink,var(--txt)); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .hl-lib-sub{ font-size:13px; font-weight:600; color:var(--app-dim,var(--dim)); margin-top:3px; }
+    .hl-lib-sub:empty{ display:none; }
+
+    /* document folders */
+    .hl-folders{ display:flex; flex-direction:column; gap:12px; }
+    .hl-folder{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:15px 16px; border:0; border-radius:20px; background:var(--app-tile,var(--surface)); box-shadow:var(--app-shadow); color:var(--app-ink,var(--txt)); font:inherit; cursor:pointer; transition:transform .14s var(--ease-spring,ease); }
+    .hl-folder:active{ transform:scale(.985); }
+    .hlf-ic{ width:50px; height:50px; flex:0 0 auto; border-radius:15px; display:grid; place-items:center; font-size:25px; background:radial-gradient(120% 120% at 30% 20%, color-mix(in srgb,var(--app-accent2,#9b8bff) 26%,transparent), color-mix(in srgb,var(--app-accent,var(--brand)) 12%,transparent)); box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+    .hlf-main{ flex:1; min-width:0; }
+    .hlf-name{ font-size:16px; font-weight:800; letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hlf-meta{ display:flex; align-items:center; gap:9px; margin-top:5px; }
+    .hlf-count{ font-size:12.5px; font-weight:600; color:var(--app-dim,var(--dim)); flex:0 0 auto; }
+    .hlf-dots{ display:inline-flex; gap:4px; }
+    .hlf-dot{ width:9px; height:9px; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.07); }
+    .hlf-chev{ flex:0 0 auto; color:var(--app-dim,var(--dim)); opacity:.6; }
+    .hlf-chev svg{ width:20px; height:20px; }
+
+    /* highlight cards — the highlighted text is the hero, with a real highlighter-marker effect */
+    .hl-cards{ display:flex; flex-direction:column; gap:13px; }
+    .hl-card{ padding:16px 17px 13px; border-radius:20px; background:var(--app-tile,var(--surface)); box-shadow:var(--app-shadow); cursor:pointer; transition:transform .14s var(--ease-spring,ease); }
+    .hl-card:active{ transform:scale(.99); }
+    .hlc-quote{ font-size:16px; line-height:1.72; color:var(--app-ink,var(--txt)); font-weight:500; letter-spacing:-.005em; }
+    .hlc-quote mark{ background:linear-gradient(180deg, transparent 54%, var(--cm) 54%); color:inherit; padding:0 2px; border-radius:2px; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+    .hlc-foot{ display:flex; align-items:center; gap:9px; margin-top:13px; }
+    .hlc-name{ display:inline-flex; align-items:center; gap:7px; min-width:0; font-size:13px; font-weight:800; letter-spacing:-.01em; color:var(--app-ink,var(--txt)); }
+    .hlc-dot{ width:10px; height:10px; border-radius:3px; flex:0 0 auto; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+    .hlc-nm{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hlc-page{ font-size:12px; font-weight:600; color:var(--app-dim,var(--dim)); flex:0 0 auto; }
+    .hlc-page:before{ content:"·"; margin-right:9px; }
+    .hlc-menu{ margin-left:auto; flex:0 0 auto; width:34px; height:34px; border:0; border-radius:50%; background:transparent; color:var(--app-dim,var(--dim)); cursor:pointer; display:grid; place-items:center; transition:background .12s; }
+    .hlc-menu svg{ width:19px; height:19px; }
+    .hlc-menu:active{ background:color-mix(in srgb,var(--app-ink,var(--txt)) 9%,transparent); }
+
+    .hl-empty2{ text-align:center; color:var(--app-dim,var(--dim)); font-size:14px; line-height:1.7; padding:52px 24px; }
+    .hl-empty2 .hl-empty-ic{ font-size:40px; margin-bottom:10px; }
+    .hl-empty2 b{ color:var(--app-ink,var(--txt)); }
+
+    /* action menu sheet */
+    .hl-act{ position:fixed; inset:0; z-index:400; display:flex; align-items:flex-end; justify-content:center; background:rgba(8,6,16,.5); animation:app-fade .2s ease both; }
+    .hl-act[hidden]{ display:none; }
+    .hl-act-card{ width:100%; max-width:520px; background:var(--sheet-card,var(--app-bg,var(--surface))); border:1px solid var(--sheet-line,var(--app-line,var(--line))); border-bottom:0; border-radius:28px 28px 0 0; padding:8px 16px calc(16px + env(safe-area-inset-bottom)); box-shadow:var(--sheet-shadow,0 -16px 50px -12px rgba(0,0,0,.45)); animation:app-rise .28s cubic-bezier(.22,1,.36,1) both; }
+    .hl-act-grab{ width:36px; height:5px; border-radius:5px; background:var(--sheet-grab,rgba(140,130,160,.4)); margin:0 auto 14px; }
+    .hl-act-h{ font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:.9px; color:var(--app-dim,var(--dim)); margin:0 6px 12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hl-act-b{ display:flex; align-items:center; gap:13px; width:100%; text-align:left; padding:14px; margin-bottom:8px; border:0; border-radius:15px; background:var(--sheet-row,var(--surface2)); color:var(--app-ink,var(--txt)); font:inherit; font-weight:700; font-size:15px; cursor:pointer; }
+    .hl-act-b:active{ transform:scale(.99); }
+    .hl-act-b svg{ width:20px; height:20px; flex:0 0 auto; }
+    .hl-act-del{ color:#e5484d; }
+    .hl-act-cancel{ width:100%; padding:14px; margin-top:2px; border:0; border-radius:15px; background:var(--sheet-row,var(--surface2)); color:var(--app-dim,var(--dim)); font:inherit; font-weight:700; cursor:pointer; }
+  </style>
+
+  <script>
+    (function () {
+      var $ = function (id){ return document.getElementById(id); };
+      function load(){ try { return JSON.parse(localStorage.getItem('sj_highlights') || '{}'); } catch (e) { return {}; } }
+      function save(all){ try { localStorage.setItem('sj_highlights', JSON.stringify(all)); } catch (e) {} }
+      var HL_COLORS = { y:'#ffcd00', g:'#5fd68a', p:'#ff8ec2', b:'#7fb0ff', o:'#ffab5e' };
+      function marker(c){ var h = HL_COLORS[c] || HL_COLORS.y; return h + '9e'; }   // ~62% alpha marker
+      function esc(s){ var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+      function displayName(n){ return String(n || 'Document').replace(/\.[^.]+$/, ''); }
+      var curDoc = null, recMap = {};
+      try { if (window.SJRecents && SJRecents.list) SJRecents.list().then(function (a){ (a || []).forEach(function (r){ if (r && r.name != null) recMap[r.name] = r.id; }); }); } catch (e) {}
+
+      function totalCount(all){ var t = 0; Object.keys(all).forEach(function (k){ t += (all[k] || []).length; }); return t; }
+      function lastTs(arr){ var m = 0; (arr || []).forEach(function (h){ if ((h.ts || 0) > m) m = h.ts || 0; }); return m; }
+
+      function renderFolders(){
+        curDoc = null; $('hlLibBack').hidden = true; $('hlLibH').textContent = 'My Highlights';
+        var all = load(), docs = Object.keys(all).filter(function (k){ return (all[k] || []).length; });
+        var body = $('hlLibBody'); body.innerHTML = '';
+        if (!docs.length){ $('hlLibSub').textContent = ''; body.innerHTML = '<div class="hl-empty2"><div class="hl-empty-ic">🖍️</div>No highlights yet.<br>Open a PDF, select text and tap <b>Highlight</b> — everything you save is collected here, grouped by document.</div>'; return; }
+        var tot = totalCount(all);
+        $('hlLibSub').textContent = tot + ' highlight' + (tot > 1 ? 's' : '') + ' · ' + docs.length + ' document' + (docs.length > 1 ? 's' : '');
+        docs.sort(function (a, b){ return lastTs(all[b]) - lastTs(all[a]); });
+        var grid = document.createElement('div'); grid.className = 'hl-folders';
+        docs.forEach(function (name){
+          var arr = all[name] || [];
+          var dots = arr.slice(0, 6).map(function (h){ return '<span class="hlf-dot" style="background:' + (HL_COLORS[h.color] || HL_COLORS.y) + '"></span>'; }).join('');
+          var card = document.createElement('button'); card.type = 'button'; card.className = 'hl-folder';
+          card.innerHTML = '<div class="hlf-ic">📖</div><div class="hlf-main"><div class="hlf-name">' + esc(displayName(name)) + '</div><div class="hlf-meta"><span class="hlf-count">' + arr.length + ' highlight' + (arr.length > 1 ? 's' : '') + '</span><span class="hlf-dots">' + dots + '</span></div></div><span class="hlf-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>';
+          card.onclick = function (){ renderDoc(name); };
+          grid.appendChild(card);
+        });
+        body.appendChild(grid);
+      }
+
+      function renderDoc(name){
+        curDoc = name; $('hlLibBack').hidden = false; $('hlLibH').textContent = displayName(name);
+        var all = load(), arr = (all[name] || []).slice().reverse();
+        $('hlLibSub').textContent = arr.length + ' highlight' + (arr.length > 1 ? 's' : '');
+        var body = $('hlLibBody'); body.innerHTML = '';
+        var list = document.createElement('div'); list.className = 'hl-cards';
+        arr.forEach(function (it){
+          var col = HL_COLORS[it.color] || HL_COLORS.y;
+          var c = document.createElement('div'); c.className = 'hl-card';
+          c.style.setProperty('--cm', marker(it.color));
+          c.innerHTML = '<div class="hlc-quote"><mark></mark></div><div class="hlc-foot"><span class="hlc-name"><span class="hlc-dot"></span><span class="hlc-nm"></span></span><span class="hlc-page">Page ' + (it.page || 1) + '</span><button class="hlc-menu" type="button" aria-label="Options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg></button></div>';
+          c.querySelector('.hlc-quote mark').textContent = it.text;
+          c.querySelector('.hlc-dot').style.background = col;
+          c.querySelector('.hlc-nm').textContent = it.name;
+          c.querySelector('.hlc-menu').onclick = function (e){ e.stopPropagation(); openMenu(name, it); };
+          c.onclick = function (){ openHl(name, it); };
+          list.appendChild(c);
+        });
+        body.appendChild(list);
+      }
+
+      function openAt(id, page){ location.href = '/tools/pdf-studio.html?recent=' + id + '&hlpage=' + (page || 1); }
+      function openHl(name, it){
+        var page = it.page || 1;
+        // 1) the id stored WITH the highlight (most reliable) — verify it still exists, then open
+        if (it.docId && window.SJRecents && SJRecents.get){
+          SJRecents.get(it.docId).then(function (rec){ if (rec && rec.blob) openAt(it.docId, page); else byName(); }).catch(byName);
+          return;
+        }
+        byName();
+        function byName(){
+          if (recMap[name]){ openAt(recMap[name], page); return; }
+          // 2) fresh lookup by document name (recMap may not have loaded yet)
+          if (window.SJRecents && SJRecents.list){
+            SJRecents.list().then(function (a){
+              var m = (a || []).find(function (r){ return r && (r.name === name || displayName(r.name) === displayName(name)); });
+              if (m){ recMap[name] = m.id; openAt(m.id, page); }
+              else miss();
+            }).catch(miss);
+          } else miss();
+        }
+        function miss(){ if (window.SnapJarKit && SnapJarKit.toast) SnapJarKit.toast('This document isn’t in My Files anymore', 'info', 3500); }
+      }
+
+      /* 3-dots action menu */
+      var actName = null, actIt = null;
+      function openMenu(name, it){ actName = name; actIt = it; $('hlActName').textContent = it.name; $('hlAct').hidden = false; }
+      function closeMenu(){ $('hlAct').hidden = true; }
+      $('hlActCancel').onclick = closeMenu;
+      $('hlAct').onclick = function (e){ if (e.target === $('hlAct')) closeMenu(); };
+      $('hlActRename').onclick = function (){
+        closeMenu(); if (!actIt) return; var name = actName, it = actIt;
+        var p = (window.SnapJarKit && SnapJarKit.ask) ? SnapJarKit.ask({ title: 'Rename highlight', value: it.name, ok: 'Save' }) : Promise.resolve(prompt('Name', it.name));
+        Promise.resolve(p).then(function (v){ if (v && v.trim()){ var a = load(); a[name] = (a[name] || []).map(function (x){ return x.id === it.id ? Object.assign({}, x, { name: v.trim() }) : x; }); save(a); renderDoc(name); } });
+      };
+      $('hlActDelete').onclick = function (){
+        closeMenu(); if (!actIt) return; var name = actName, it = actIt;
+        function del(){ var a = load(); a[name] = (a[name] || []).filter(function (x){ return x.id !== it.id; }); if (!a[name].length){ delete a[name]; save(a); renderFolders(); } else { save(a); renderDoc(name); } if (window.SnapJarKit && SnapJarKit.toast) SnapJarKit.toast('Highlight deleted', 'ok'); }
+        if (window.SnapJarKit && SnapJarKit.ask) SnapJarKit.ask({ title: 'Delete this highlight?', body: 'This can’t be undone.', ok: 'Delete', danger: true, confirm: true }).then(function (yes){ if (yes) del(); });
+        else if (confirm('Delete this highlight?')) del();
+      };
+
+      $('hlLibBack').onclick = function (){ renderFolders(); };
+      function goRecent(){ location.href = document.body.classList.contains('is-app') ? '/recent.html' : '/recent'; }
+      try { var App = (window.SnapJarKit && SnapJarKit.plugin) ? SnapJarKit.plugin('App') : null; if (App && App.addListener) App.addListener('backButton', function (){ if (!$('hlAct').hidden){ closeMenu(); return; } if (curDoc){ renderFolders(); return; } goRecent(); }); } catch (e) {}
+      renderFolders();
+    })();
+  </script>
+</Base>

@@ -1,0 +1,321 @@
+---
+import Base from '../../layouts/Base.astro';
+const title = 'Document Scanner — SnapJar';
+const description = 'Scan documents, ID cards and books on your device — native auto edge-detection, perspective correction and a real scanner look, 100% private.';
+---
+<Base title={title} description={description}>
+  <div class="sc-app" id="scApp">
+    <!-- loading + landing / error -->
+    <div class="sc-screen sc-load" id="scLoad">
+      <button class="sc-icon sc-load-x" id="scLoadClose" type="button" aria-label="Close" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <div class="sc-spin" id="scSpin" aria-hidden="true"></div>
+      <div class="sc-hero-ic" id="scHeroIc" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M7.5 12h9"/><path d="M9 9.5h6"/><path d="M9 14.5h4"/></svg></div>
+      <div class="sc-load-t" id="scLoadT">Opening scanner…</div>
+      <div class="sc-load-s" id="scLoadS"></div>
+      <button class="sc-retry" id="scRetry" type="button" hidden>Open camera</button>
+      <button class="sc-retry sc-retry-ghost" id="scGalBtn2" type="button" hidden>Choose from gallery</button>
+    </div>
+
+    <!-- review tray -->
+    <div class="sc-screen sc-review" id="scReview" hidden>
+      <div class="sc-top">
+        <button class="sc-icon" id="scRvClose" type="button" aria-label="Cancel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <span class="sc-ttl">Review scan</span>
+        <button class="sc-chip" id="scRvAdd" type="button">＋ Page</button>
+      </div>
+      <div class="sc-name"><input class="sc-name-in" id="scName" type="text" aria-label="File name" placeholder="Name your scan" /></div>
+      <div class="sc-rv-grid" id="scRvGrid"></div>
+      <div class="sc-bar">
+        <span class="sc-rv-count" id="scRvCount">1 page</span>
+        <button class="sc-next" id="scRvSave" type="button">Save PDF</button>
+      </div>
+    </div>
+
+    <!-- discard confirm -->
+    <div class="sc-confirm" id="scConfirm" hidden>
+      <div class="sc-cf-card" role="dialog" aria-modal="true">
+        <div class="sc-cf-t" id="scCfMsg">Discard this scan?</div>
+        <div class="sc-cf-row">
+          <button class="sc-cf-cancel" id="scCfCancel" type="button">Keep editing</button>
+          <button class="sc-cf-yes" id="scCfYes" type="button">Discard</button>
+        </div>
+      </div>
+    </div>
+
+    <input id="scGal" type="file" accept="image/*" multiple hidden />
+  </div>
+
+  <style is:global>
+    body.sc-on{ overflow:hidden; }
+    .sc-app{ position:fixed; inset:0; z-index:4000; background:#0c0a14; color:#fff;
+      font-family:'Jakarta',system-ui,sans-serif; -webkit-user-select:none; user-select:none; touch-action:none; }
+    .sc-screen{ position:absolute; inset:0; display:flex; flex-direction:column; }
+    .sc-screen[hidden]{ display:none; }
+
+    /* loading + landing / error */
+    .sc-load{ align-items:center; justify-content:center; gap:13px; text-align:center; padding:0 34px; }
+    .sc-load-x{ position:absolute; top:calc(12px + env(safe-area-inset-top)); left:16px; }
+    .sc-load-x[hidden]{ display:none; }
+    .sc-hero-ic{ width:92px; height:92px; border-radius:27px; display:grid; place-items:center; margin-bottom:4px;
+      background:linear-gradient(140deg,#ff5e7e,#8b7bff); box-shadow:0 18px 46px -14px #8b7bff; }
+    .sc-hero-ic[hidden]{ display:none; }
+    .sc-hero-ic svg{ width:44px; height:44px; color:#fff; }
+    .sc-spin{ width:46px; height:46px; border-radius:50%; border:3px solid rgba(255,255,255,.16);
+      border-top-color:#8b7bff; animation:sc-rot .8s linear infinite; }
+    .sc-spin[hidden]{ display:none; }
+    @keyframes sc-rot{ to{ transform:rotate(360deg); } }
+    .sc-load-t{ font-size:18px; font-weight:800; letter-spacing:-.2px; }
+    .sc-load-s{ font-size:13.5px; color:#aea7c5; line-height:1.5; max-width:300px; }
+    .sc-retry{ margin-top:8px; width:100%; max-width:300px; padding:15px; border:0; border-radius:15px; cursor:pointer;
+      background:linear-gradient(135deg,#ff5e7e,#8b7bff); color:#fff; font:inherit; font-weight:800; font-size:16px;
+      box-shadow:0 12px 30px -12px #8b7bff; }
+    .sc-retry[hidden]{ display:none; }
+    .sc-retry:active{ transform:scale(.97); }
+    .sc-retry-ghost{ background:rgba(255,255,255,.1); box-shadow:none; font-size:15px; padding:13px; margin-top:0; }
+
+    /* shared top bar */
+    .sc-top{ display:flex; align-items:center; gap:12px; padding:calc(12px + env(safe-area-inset-top)) 16px 12px; flex:0 0 auto; }
+    .sc-ttl{ flex:1; text-align:center; font-size:16px; font-weight:800; letter-spacing:-.2px; }
+    .sc-icon{ width:42px; height:42px; border-radius:50%; border:0; background:rgba(255,255,255,.1); color:#fff;
+      display:grid; place-items:center; cursor:pointer; flex:0 0 auto; }
+    .sc-icon svg{ width:20px; height:20px; }
+    .sc-icon:active{ transform:scale(.92); background:rgba(255,255,255,.16); }
+    .sc-chip{ flex:0 0 auto; min-height:42px; padding:9px 16px; border-radius:999px; border:0; cursor:pointer;
+      background:rgba(255,255,255,.12); color:#fff; font:inherit; font-weight:700; font-size:13.5px; }
+    .sc-chip:active{ transform:scale(.95); }
+
+    /* bottom bar */
+    .sc-bar{ display:flex; align-items:center; gap:12px; padding:14px 18px calc(16px + env(safe-area-inset-bottom)); flex:0 0 auto; }
+    .sc-next{ margin-left:auto; padding:14px 30px; border:0; border-radius:14px; cursor:pointer;
+      background:linear-gradient(135deg,#ff5e7e,#8b7bff); color:#fff; font:inherit; font-weight:800; font-size:15px;
+      box-shadow:0 10px 26px -10px #8b7bff; }
+    .sc-next:active{ transform:scale(.97); }
+
+    /* review tray */
+    .sc-name{ padding:4px 16px 8px; flex:0 0 auto; }
+    .sc-name-in{ width:100%; box-sizing:border-box; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06); color:#fff; font:inherit; font-weight:700; font-size:15px; outline:none; }
+    .sc-name-in:focus{ border-color:#8b7bff; }
+    .sc-rv-grid{ flex:1 1 auto; min-height:0; overflow-y:auto; touch-action:pan-y; display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(98px,1fr)); gap:13px; padding:8px 16px 14px; align-content:start; }
+    .sc-tile{ position:relative; aspect-ratio:.72; border-radius:11px; overflow:hidden; background:#fff;
+      box-shadow:0 6px 18px -8px rgba(0,0,0,.7); transition:transform .12s, opacity .12s; }
+    .sc-tile img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .sc-tile.dragging{ opacity:.65; transform:scale(1.06); z-index:6; }
+    .sc-tile-n{ position:absolute; left:5px; bottom:5px; background:rgba(8,6,18,.7); color:#fff; font-size:11px; font-weight:800; padding:2px 8px; border-radius:7px; }
+    .sc-tile-x,.sc-tile-rt,.sc-tile-drag{ position:absolute; width:28px; height:28px; border-radius:50%; border:0;
+      background:rgba(8,6,18,.62); color:#fff; display:grid; place-items:center; cursor:pointer; }
+    .sc-tile-x::before,.sc-tile-rt::before,.sc-tile-drag::before{ content:""; position:absolute; inset:-8px; }  /* ≥44px touch target */
+    .sc-tile-x{ top:5px; right:5px; font-size:14px; line-height:1; }
+    .sc-tile-rt{ top:5px; left:5px; } .sc-tile-rt svg{ width:15px; height:15px; }
+    .sc-tile-drag{ bottom:5px; right:5px; touch-action:none; cursor:grab; } .sc-tile-drag svg{ width:15px; height:15px; }
+    .sc-rv-count{ font-size:13px; font-weight:700; color:#aea7c5; }
+
+    /* discard confirm */
+    .sc-confirm{ position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; background:rgba(6,4,14,.6); padding:28px; }
+    .sc-confirm[hidden]{ display:none; }
+    .sc-cf-card{ width:100%; max-width:340px; background:#17131f; border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:22px; box-shadow:0 24px 60px -20px rgba(0,0,0,.8); animation:sc-pop .22s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes sc-pop{ from{ transform:scale(.92); opacity:0 } }
+    .sc-cf-t{ font-size:16px; font-weight:800; text-align:center; margin-bottom:18px; }
+    .sc-cf-row{ display:flex; gap:10px; }
+    .sc-cf-row button{ flex:1; padding:13px; border-radius:13px; border:0; font:inherit; font-weight:800; cursor:pointer; }
+    .sc-cf-cancel{ background:rgba(255,255,255,.12); color:#fff; }
+    .sc-cf-yes{ background:#ff5e7e; color:#fff; }
+  </style>
+
+  <script>
+    (function () {
+      var $ = function (id){ return document.getElementById(id); };
+      var K = function (){ return window.SnapJarKit; };
+      function toast(m, t){ if (K() && K().toast) K().toast(m, t || 'info'); }
+      function haptic(s){ if (K() && K().haptic) K().haptic(s); }
+      function plugin(n){ return (K() && K().plugin) ? K().plugin(n) : null; }
+
+      var MODE = (new URLSearchParams(location.search).get('mode') || 'document').toLowerCase();
+      var DS = plugin('DocumentScanner');
+      var Cap = window.Capacitor;
+      var pages = [];           // [{dataURL, w, h}]
+      var editIndex = -1;       // retake target
+      var triedInstall = false;
+
+      document.body.classList.add('sc-on');
+
+      /* ---------- native ML Kit scanner ---------- */
+      function boot(){
+        if (DS && DS.scanDocument) runScan(false, -1);   // jump straight into the camera
+        else showLand();                                  // web / no plugin → gallery landing
+      }
+      function busy(t){
+        show('scLoad'); $('scSpin').hidden = false; $('scHeroIc').hidden = true; $('scLoadClose').hidden = true;
+        $('scRetry').hidden = true; $('scGalBtn2').hidden = true; $('scLoadT').textContent = t || 'Opening scanner…'; $('scLoadS').textContent = '';
+      }
+      /* Premium landing — shown when the user BACKS OUT of the camera (a discard ≠ a failure).
+         Calm copy, a hero icon, and two clear next steps; never an error tone. */
+      function showLand(){
+        show('scLoad'); $('scSpin').hidden = true; $('scHeroIc').hidden = false; $('scLoadClose').hidden = false;
+        $('scLoadT').textContent = 'Ready to scan';
+        $('scLoadS').textContent = DS ? 'Point your camera at a document — SnapJar finds the edges and crops it for you.' : 'Pick a photo and we’ll turn it into a clean scan.';
+        $('scRetry').hidden = false; $('scRetry').textContent = DS ? 'Open camera' : 'Choose photo';
+        $('scGalBtn2').hidden = false; $('scGalBtn2').textContent = 'Choose from gallery';
+      }
+      /* Real problem states (permission / failure) — clear, not blank. */
+      function showLoad(title, sub, gallery){
+        show('scLoad'); $('scSpin').hidden = true; $('scHeroIc').hidden = false; $('scLoadClose').hidden = false;
+        $('scLoadT').textContent = title; $('scLoadS').textContent = sub || '';
+        $('scRetry').hidden = false; $('scRetry').textContent = DS ? 'Try again' : 'Choose photo';
+        $('scGalBtn2').hidden = !gallery; $('scGalBtn2').textContent = 'Choose from gallery';
+      }
+      $('scLoadClose').addEventListener('click', requestLeave);
+
+      async function ensureModule(){
+        // only skip install when the module is POSITIVELY available; any other shape (false,
+        // unknown, or the probe throwing) → attempt the (idempotent) install. The previous
+        // `!a || a.available !== false` skipped install for every shape except exactly
+        // {available:false}, so a cold install errored before the retry path kicked in.
+        try { var a = await DS.isGoogleDocumentScannerModuleAvailable(); if (a && a.available === true) return true; } catch (e){}
+        busy('Preparing the scanner…'); $('scLoadS').textContent = 'One-time setup (a few MB)';
+        return new Promise(function (resolve){
+          var done = false; function fin(v){ if (!done){ done = true; resolve(v); } }
+          try { DS.addListener('googleDocumentScannerModuleInstallProgress', function (ev){ if (ev && (ev.progress >= 100 || ev.state === 4)) fin(true); else if (ev && ev.state === 5) fin(false); }); } catch (e) {}
+          DS.installGoogleDocumentScannerModule().catch(function (){ fin(false); });
+          setTimeout(function (){ fin(true); }, 45000);
+        });
+      }
+
+      async function runScan(append, replaceIdx){
+        busy(pages.length ? 'Add a page…' : 'Opening scanner…');
+        try {
+          var res = await DS.scanDocument({ resultFormats: 'JPEG', galleryImportAllowed: true, scannerMode: 'FULL', pageLimit: MODE === 'id' ? 2 : 50 });
+          var uris = (res && res.scannedImages) || [];
+          if (!uris.length){ if (pages.length) showReview(); else showLand(); return; }   // backed out — not a failure
+          busy('Processing…');
+          var newPages = [];
+          for (var i = 0; i < uris.length; i++){ newPages.push(await uriToPage(uris[i])); }
+          if (replaceIdx != null && replaceIdx >= 0){ pages.splice.apply(pages, [replaceIdx, 1].concat(newPages)); }
+          else if (append){ pages = pages.concat(newPages); }
+          else { pages = newPages; }
+          editIndex = -1; haptic('light'); showReview();
+        } catch (e){
+          var msg = (e && (e.message || e)) + '';
+          // user backed out of the native scanner → NOT an error; offer to scan again / use gallery
+          if (/cancel|dismiss|back|user/i.test(msg)){ if (pages.length) showReview(); else showLand(); return; }
+          if (!triedInstall && /module|unavailable|not available|install|MODULE/i.test(msg)){ triedInstall = true; var ok = await ensureModule(); if (ok){ return runScan(append, replaceIdx); } }
+          if (pages.length){ showReview(); return; }
+          if (/permission|denied|camera|PERMISSION|not allowed/i.test(msg)){
+            showLoad('Camera access is off', 'Turn on camera access for SnapJar in Settings to scan — or pick a photo from your gallery instead.', true);
+          } else {
+            showLoad('Couldn’t start the scanner', 'Give it another try, or pick a photo from your gallery.', true);
+          }
+        }
+      }
+
+      function blobToDataURL(blob){ return new Promise(function (res, rej){ var r = new FileReader(); r.onload = function (){ res(r.result); }; r.onerror = rej; r.readAsDataURL(blob); }); }
+      function loadImg(src){ return new Promise(function (res, rej){ var im = new Image(); im.onload = function (){ res(im); }; im.onerror = rej; im.src = src; }); }
+      async function uriToPage(uri){
+        var src = (Cap && Cap.convertFileSrc) ? Cap.convertFileSrc(uri) : uri;
+        var blob = await (await fetch(src)).blob();
+        var dataURL = await blobToDataURL(blob);
+        var img = await loadImg(dataURL);
+        return { dataURL: dataURL, w: img.naturalWidth || 1240, h: img.naturalHeight || 1754 };
+      }
+
+      /* ---------- gallery fallback (web / explicit) ---------- */
+      $('scRetry').addEventListener('click', function (){ haptic('light'); if (DS) runScan(pages.length > 0, -1); else { var i = $('scGal'); i.value = ''; i.click(); } });
+      $('scGalBtn2').addEventListener('click', function (){ var i = $('scGal'); i.value = ''; i.click(); });
+      $('scGal').addEventListener('change', async function (e){
+        var fs = e.target.files; if (!fs || !fs.length) { if (!pages.length) leave(); return; }
+        busy('Processing…');
+        try { for (var i = 0; i < fs.length; i++){ var d = await blobToDataURL(fs[i]); var im = await loadImg(d); pages.push({ dataURL: d, w: im.naturalWidth, h: im.naturalHeight }); } showReview(); }
+        catch (e2){ toast('Could not read that photo', 'err'); if (pages.length) showReview(); else leave(); }
+      });
+
+      /* ---------- review tray ---------- */
+      function pad(n){ return (n < 10 ? '0' : '') + n; }
+      function defName(){ var d = new Date(); return MODE.charAt(0).toUpperCase() + MODE.slice(1) + ' ' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + '-' + pad(d.getMinutes()); }
+      var RT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>';
+      var DRAG_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+      function showReview(){ if (!$('scName').value) $('scName').value = defName(); renderTiles(); show('scReview'); }
+      function setCount(){ $('scRvCount').textContent = pages.length + ' page' + (pages.length === 1 ? '' : 's'); }
+      function renumber(){ Array.prototype.slice.call($('scRvGrid').querySelectorAll('.sc-tile')).forEach(function (el, i){ var n = el.querySelector('.sc-tile-n'); if (n) n.textContent = (i + 1); }); }
+      function renderTiles(){
+        var grid = $('scRvGrid'); grid.innerHTML = '';
+        pages.forEach(function (pg, i){
+          var t = document.createElement('div'); t.className = 'sc-tile'; t._page = pg;
+          var im = new Image(); im.src = pg.dataURL; t.appendChild(im);
+          var n = document.createElement('span'); n.className = 'sc-tile-n'; n.textContent = (i + 1); t.appendChild(n);
+          var x = document.createElement('button'); x.type = 'button'; x.className = 'sc-tile-x'; x.innerHTML = '✕'; x.setAttribute('aria-label', 'Delete page'); x.addEventListener('click', function (e){ e.stopPropagation(); deletePage(pg); }); t.appendChild(x);
+          var rt = document.createElement('button'); rt.type = 'button'; rt.className = 'sc-tile-rt'; rt.innerHTML = RT_SVG; rt.setAttribute('aria-label', 'Rescan page'); rt.addEventListener('click', function (e){ e.stopPropagation(); var idx = pages.indexOf(pg); if (DS) runScan(false, idx); else { var gi = $('scGal'); gi.value = ''; gi.click(); } }); t.appendChild(rt);
+          var dg = document.createElement('button'); dg.type = 'button'; dg.className = 'sc-tile-drag'; dg.innerHTML = DRAG_SVG; dg.setAttribute('aria-label', 'Drag to reorder'); attachReorder(dg, t, grid); t.appendChild(dg);
+          grid.appendChild(t);
+        });
+        setCount();
+      }
+      /* Deleting a scanned page is unrecoverable — and deleting the LAST one silently drops the
+         user out of the whole scan flow. Confirm, and say so when it's the last page. */
+      function deletePage(pg){
+        var i = pages.indexOf(pg); if (i < 0) return;
+        var K = window.SnapJarKit, last = pages.length === 1;
+        var go = function (){ pages.splice(i, 1); haptic('light'); if (!pages.length){ if (DS) runScan(false, -1); else leave(); return; } renderTiles(); };
+        if (K && K.ask) K.ask({ title: last ? 'Delete the only page?' : 'Delete this page?', body: last ? 'This ends the scan and returns you to the scanner.' : "This can't be undone.", ok: 'Delete', danger: true, confirm: true }).then(function (yes){ if (yes) go(); });
+        else go();
+      }
+      function attachReorder(handle, tile, grid){
+        handle.addEventListener('pointerdown', function (e){
+          e.preventDefault(); handle.setPointerCapture(e.pointerId); tile.classList.add('dragging'); haptic('light');
+          function mv(ev){ var tiles = Array.prototype.slice.call(grid.querySelectorAll('.sc-tile:not(.dragging)')), ref = null; for (var i = 0; i < tiles.length; i++){ var r = tiles[i].getBoundingClientRect(); if (ev.clientY < r.top + r.height * 0.6){ ref = tiles[i]; break; } } if (ref) grid.insertBefore(tile, ref); else grid.appendChild(tile); }
+          function up(){ handle.removeEventListener('pointermove', mv); handle.removeEventListener('pointerup', up); tile.classList.remove('dragging'); pages = Array.prototype.slice.call(grid.querySelectorAll('.sc-tile')).map(function (el){ return el._page; }); renumber(); }
+          handle.addEventListener('pointermove', mv); handle.addEventListener('pointerup', up);
+        });
+      }
+      $('scRvAdd').addEventListener('click', function (){ if (DS) runScan(true, -1); else { var i = $('scGal'); i.value = ''; i.click(); } });
+      $('scRvClose').addEventListener('click', requestLeave);
+      /* guard(): disables the button for the duration of the async save. Without it, a double tap
+         on a slow phone produced two PDFs and two Recents entries — this is the flagship flow. */
+      $('scRvSave').addEventListener('click', (window.SnapJarKit && SnapJarKit.guard) ? SnapJarKit.guard($('scRvSave'), savePdf) : savePdf);
+
+      async function savePdf(){
+        if (!pages.length){ leave(); return; }
+        haptic('light'); busy('Building PDF…');
+        try {
+          var PDFDocument = (await import('pdf-lib')).PDFDocument, pdf = await PDFDocument.create();
+          for (var i = 0; i < pages.length; i++){
+            var p = pages[i], bytes = await (await fetch(p.dataURL)).arrayBuffer();
+            var img; try { img = await pdf.embedJpg(bytes); } catch (e){ img = await pdf.embedPng(bytes); }
+            var page = pdf.addPage([p.w, p.h]); page.drawImage(img, { x: 0, y: 0, width: p.w, height: p.h });
+          }
+          var out = await pdf.save(), blob = new Blob([out], { type: 'application/pdf' });
+          var nm = ($('scName').value || defName()).trim().replace(/[\\/:*?"<>|]/g, '-') + '.pdf';
+          try { if (window.SJNotify) window.SJNotify.cancel('SCAN_UNSAVED'); } catch (e) {}   // saved after all → drop the reminder
+          if (window.SJRecents){
+            var id = await window.SJRecents.add({ name: nm, kind: 'pdf', blob: blob });
+            if (id){
+              /* P0: the PDF they asked for is ready. Auto-suppressed if they're still watching. */
+              try { if (window.SJNotify) window.SJNotify.onEvent('CONVERSION_DONE', { recentId: id }); } catch (e) {}
+              leave(true); location.href = '/tools/pdf-studio.html?recent=' + id; return;
+            }
+          }
+          var url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = nm; a.click(); setTimeout(function (){ URL.revokeObjectURL(url); }, 4000); leave();
+        } catch (e){ toast('Could not build the PDF', 'err'); showReview(); }
+      }
+
+      /* ---------- screens / leave / back ---------- */
+      function show(id){ ['scLoad', 'scReview'].forEach(function (s){ $(s).hidden = s !== id; }); }
+      function leave(noNav){ document.body.classList.remove('sc-on'); try { if (window.SJNotify) window.SJNotify.cancel('SCAN_UNSAVED'); } catch (e) {} if (!noNav) location.href = '/'; }
+      /* SCAN_UNSAVED is deliberately NOT fired.
+         The scanned pages live only in memory (`pages` above) — nothing is persisted — so if
+         Android kills the app the scan is gone. A notification saying "your scan is waiting"
+         would then open a blank camera and deliver nothing: a broken promise, which trains
+         users to ignore us. Re-enable only once scan state is persisted to IndexedDB on
+         visibilitychange, so the promise is actually backed by something. */
+      function requestLeave(){ if (!pages.length){ leave(); return; } $('scCfMsg').textContent = 'Discard this scan? You have ' + pages.length + ' page' + (pages.length === 1 ? '' : 's') + '.'; $('scConfirm').hidden = false; }
+      $('scCfCancel').addEventListener('click', function (){ $('scConfirm').hidden = true; });
+      $('scCfYes').addEventListener('click', function (){ $('scConfirm').hidden = true; leave(); });
+
+      try { var App = plugin('App');
+        if (App && App.addListener) App.addListener('backButton', function (){ if (!document.body.classList.contains('sc-on')) return; if (!$('scConfirm').hidden){ $('scConfirm').hidden = true; return; } requestLeave(); });
+      } catch (e) {}
+
+      boot();
+    })();
+  </script>
+</Base>

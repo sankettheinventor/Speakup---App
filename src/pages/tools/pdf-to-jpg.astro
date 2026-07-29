@@ -1,0 +1,130 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'PDF to JPG — Convert PDF Pages to Images (Free, Private)';
+const description = 'Free PDF to JPG converter. Turn each page of a PDF into a JPG image right in your browser, then download them zipped. Nothing is uploaded.';
+const faqItems = [
+  { q: 'How do I convert a PDF to JPG?', a: 'Drop a PDF onto the page or click browse to pick one. Each page is rendered to a JPG that you can download individually, or grab them all at once as a single zip file.' },
+  { q: 'Is my PDF uploaded or stored anywhere?', a: 'No. The entire conversion runs locally in your browser using JavaScript, so your PDF is never uploaded, stored, or shared. It stays on your device the whole time.' },
+  { q: 'Does each PDF page become a separate JPG?', a: 'Yes. Every page in the PDF is rendered to its own page-1.jpg, page-2.jpg and so on, so a 10-page PDF gives you 10 separate JPG images.' },
+  { q: 'What quality are the converted JPG images?', a: 'Pages are rendered at 2x scale and saved as JPGs at 90% quality, which keeps text and figures crisp while keeping file sizes reasonable.' },
+  { q: 'Can I download all the images at once?', a: 'Yes. When a PDF has two or more pages, a "Download all (.zip)" button appears so you can save every page image in one zip archive instead of one at a time.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the page or click browse to pick one from your device.' },
+  { name: 'Wait for rendering', text: 'Each page is rendered locally in your browser to a 2x-scale JPG and shown as a thumbnail.' },
+  { name: 'Download images', text: 'Click Download under any page to save that JPG, or use Download all (.zip) to grab every page at once.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap">
+    <p class="kicker">PDF Tool</p><h1>PDF to JPG</h1>
+    <p>Drop in a PDF to render every page to a downloadable JPG — right here in your browser.</p>
+  </div></header>
+  <div class="wrap"><div class="tool wm">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">📄</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <div class="conv-done" id="convDone" hidden>
+        <span class="conv-check" aria-hidden="true">✓</span>
+        <div class="conv-txt"><b id="convCount">Converted</b><small>Your PDF is now JPG images — tap a page to download it</small></div>
+      </div>
+      <p id="status" class="status">Rendering…</p>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="wm-actions"><button id="zip" type="button" class="wm-btn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download all images (.zip)</button>
+        <button id="reset" type="button" class="wm-btn ghost">Convert another PDF</button></div>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>Convert PDF pages to JPG</h2>
+    <p>Drop in a PDF and each page is rendered to a high-quality JPG you can download — individually or all at once as a zip. Handy for pulling a figure out of a report, sharing a single page as an image, or posting a PDF page where only images are allowed. It all runs locally in your browser, so your document is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/jpg-to-pdf">JPG to PDF →</a><a href="/tools/pdf-tools">Merge PDF →</a></div>
+  </div>
+  <HowTo task="convert a PDF to JPG images" steps={howSteps} />
+  <AppLd name="PDF to JPG" description="Drop or browse to a PDF and this tool renders each page to a JPG thumbnail you can download individually or grab all at once as a zip." category="BusinessApplication" features={["Drag-and-drop or browse to load a PDF", "Renders every page to a 2x-scale JPG in-browser", "Download any single page image", "Download all pages as a single zip", "Runs fully client-side — no uploads"]} />
+  <Faq items={faqItems} />
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .wm{padding:18px}
+    /* premium converted-pages grid */
+    .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:4px 0 18px}
+    .pcell{display:flex;flex-direction:column;gap:9px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(20,16,44,.05),0 12px 26px -18px rgba(20,16,44,.28)}
+    .pcell-img{position:relative;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:#fff;aspect-ratio:3/4;display:grid;place-items:center}
+    .pcell-img img{width:100%;height:100%;object-fit:contain;display:block}
+    .pcell-badge{position:absolute;top:6px;left:6px;font-size:10px;font-weight:800;letter-spacing:.3px;color:#fff;background:rgba(20,16,44,.62);padding:3px 8px;border-radius:999px}
+    .pcell-dl{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 10px;border-radius:10px;border:0;cursor:pointer;font:inherit;font-weight:800;font-size:12.5px;color:#fff;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .pcell-dl:active{transform:scale(.97)}.pcell-dl svg{width:15px;height:15px}
+    .wm-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .wm-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 18px;border-radius:12px;font-weight:800;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand));flex:1;min-width:165px}
+    .wm-btn svg{width:17px;height:17px}.wm-btn:active{transform:scale(.98)}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}
+    .status{margin:0 0 12px;font-size:13px;color:var(--dim);font-weight:600}.status[hidden]{display:none}
+    /* success banner */
+    .conv-done{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;margin-bottom:14px;background:color-mix(in srgb,#16a34a 12%,var(--surface));border:1px solid color-mix(in srgb,#16a34a 32%,var(--line))}
+    .conv-done[hidden]{display:none}
+    .conv-check{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;display:grid;place-items:center;font-weight:900;font-size:16px}
+    .conv-txt b{display:block;font-size:14.5px;color:var(--txt,#16121f)}.conv-txt small{font-size:12px;color:var(--dim)}
+  </style>
+  <script>
+    import * as pdfjsLib from 'pdfjs-dist';
+    import JSZip from 'jszip';
+    import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    (function(){
+      var imgs=[];
+      function $(i){return document.getElementById(i);}
+      function dl(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);}
+      async function render(file){
+        if(typeof pdfjsLib==='undefined'){$('status').textContent='PDF engine loading… try again in a second.';return;}
+        $('drop').hidden=true;$('editor').hidden=false;$('convDone').hidden=true;$('status').hidden=false;$('status').textContent='Rendering…';
+        try{
+          var buf=await file.arrayBuffer();
+          var pdf=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise;   // CVE-2024-4367
+          $('thumbs').innerHTML='';window.SnapJarKit.clear();imgs=[];
+          var _np=pdf.numPages, _cap=Math.min(_np,150);
+          if(_np>150 && window.SnapJarKit) window.SnapJarKit.toast('Large PDF — converting the first 150 of '+_np+' pages','info',4500);
+          for(var n=1;n<=_cap;n++){
+            $('status').textContent='Processing page '+n+' of '+_cap+'…';
+            var page=await pdf.getPage(n);var vp=page.getViewport({scale:2});
+            var fit=window.SnapJarKit.fitDims(vp.width,vp.height);
+            if(fit.clamped){ vp=page.getViewport({scale:2*fit.scale}); }
+            var c=document.createElement('canvas');c.width=Math.max(1,Math.round(vp.width));c.height=Math.max(1,Math.round(vp.height));
+            await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+            var blob=await new Promise(function(res){c.toBlob(res,'image/jpeg',0.9);});
+            if(!blob){ throw new Error('Could not encode this page'); }
+            var name='page-'+n+'.jpg';imgs.push({blob:blob,name:name});
+            var cell=document.createElement('div');cell.className='pcell';
+            var wrap=document.createElement('div');wrap.className='pcell-img';
+            var im=document.createElement('img');im.src=window.SnapJarKit.track(blob);im.alt='Page '+n;
+            var badge=document.createElement('span');badge.className='pcell-badge';badge.textContent='Page '+n;
+            wrap.appendChild(im);wrap.appendChild(badge);
+            var b=document.createElement('button');b.type='button';b.className='pcell-dl';b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> JPG';
+            (function(bl,nm){b.onclick=function(){if(b.disabled)return;b.disabled=true;dl(bl,nm);if(window.SnapJarKit&&window.SnapJarKit.toast)window.SnapJarKit.toast('Saved '+nm,'ok');setTimeout(function(){b.disabled=false;},1200);};})(blob,name);
+            cell.appendChild(wrap);cell.appendChild(b);$('thumbs').appendChild(cell);
+            await window.SnapJarKit.breathe();
+          }
+          $('zip').hidden=imgs.length<2;
+          $('status').hidden=true;
+          $('convCount').textContent=imgs.length+' page'+(imgs.length>1?'s':'')+' converted to JPG';
+          $('convDone').hidden=false;
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])render(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])render(e.dataTransfer.files[0]);});
+      $('zip').onclick=window.SnapJarKit.guard('zip',async function(){if(typeof JSZip==='undefined')return;var z=new JSZip();imgs.forEach(function(it){z.file(it.name,it.blob);});var b=await z.generateAsync({type:'blob'});dl(b,'pdf-pages.zip');});
+      $('reset').onclick=function(){imgs=[];window.SnapJarKit.clear();$('thumbs').innerHTML='';$('file').value='';$('status').textContent='';$('convDone').hidden=true;$('status').hidden=false;$('zip').hidden=true;$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

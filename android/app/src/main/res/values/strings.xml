@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SnapJar</string>
+    <string name="title_activity_main">SnapJar</string>
+    <string name="package_name">com.snapjar.app</string>
+    <string name="custom_url_scheme">com.snapjar.app</string>
+</resources>

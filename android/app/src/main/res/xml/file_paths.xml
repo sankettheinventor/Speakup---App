@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SECURITY: scope FileProvider to the dedicated share subdir ONLY. The previous path="."
+     mapped the entire cache + external root, enlarging what a share recipient could probe.
+     SnapJar only ever shares files it writes to cache/shares/. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="shares" path="shares/" />
+</paths>

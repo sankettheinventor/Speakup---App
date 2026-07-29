@@ -1,0 +1,89 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Rotate PDF — Turn PDF Pages Free (Private)';
+const description = 'Free rotate PDF tool. Turn every page of a PDF 90, 180 or 270 degrees and download the fixed file — in your browser, nothing uploaded.';
+const faqItems = [
+  { q: 'How do I rotate a PDF?', a: 'Drop or browse to your PDF, pick how far to turn it (90° right, 180°, or 90° left), then click Rotate & download. Every page is rotated by the same amount and saved into a new file.' },
+  { q: 'Does it rotate all pages or just one?', a: 'This tool rotates every page in the PDF by the same angle in one go. It does not currently rotate individual pages separately.' },
+  { q: 'Is the rotation saved permanently in the file?', a: 'Yes. The rotation is written into the PDF itself, so the document opens the right way up in any viewer, not just in this browser.' },
+  { q: 'Is there a file size or page limit?', a: 'There is no fixed limit set by the tool. Because everything runs in your browser using your device memory, very large PDFs may process more slowly on lower-powered devices.' },
+  { q: 'Is my PDF uploaded or stored anywhere?', a: 'No. Your PDF is processed entirely in your browser. Nothing is uploaded, stored, or shared — the file never leaves your device.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the drop zone or click browse to pick one from your device.' },
+  { name: 'Choose the angle', text: 'In the "Rotate every page" dropdown, select 90° right, 180°, or 90° left.' },
+  { name: 'Rotate and download', text: 'Click "Rotate & download" to turn every page and save the corrected PDF to your device.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap"><p class="kicker">PDF Tool</p><h1>Rotate PDF</h1>
+    <p>Drop in your PDF, pick the turn, and download every page rotated — right here in your browser.</p></div></header>
+  <div class="wrap"><div class="tool pdf">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">🔄</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <p class="info" id="info"></p>
+      <label class="ctl">Rotate every page<select id="deg"><option value="90">90° right</option><option value="180">180°</option><option value="270">90° left</option></select></label>
+      <div class="acts"><button id="go" class="wm-btn">⬇ Rotate &amp; download</button>
+        <button id="reset" class="wm-btn ghost">New PDF</button></div>
+      <p id="status" class="status"></p>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How to rotate a PDF</h2>
+    <p>Scanned a document sideways? Drop the PDF here, choose how far to turn it, and download the corrected file — every page rotated in one go. The rotation is saved into the PDF so it opens the right way up everywhere. It all runs in your browser; your document is never uploaded.</p>
+    <div class="xlinks"><a href="/tools/pdf-tools">Merge PDF →</a><a href="/tools/add-page-numbers">Add Page Numbers →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .pdf{padding:20px}.info{font-size:14px;font-weight:600;margin-bottom:14px}
+    .ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--dim);margin-bottom:14px;max-width:240px}
+    .ctl select{background:var(--surface2);border:1px solid var(--line);border-radius:9px;color:var(--txt);font:inherit;font-weight:600;padding:10px 11px}
+    .acts{display:flex;gap:10px}.wm-btn{padding:11px 18px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}.status{margin-top:10px;font-size:13px;color:var(--dim)}
+  </style>
+  <HowTo task="rotate a PDF" steps={howSteps} />
+  <AppLd name="Rotate PDF" description="Drop or browse to a PDF, pick 90° right, 180° or 90° left, then click to rotate every page and download the corrected file in your browser." category="BusinessApplication" features={["Drag-and-drop or browse PDF upload","Rotate every page 90°, 180° or 270°","Rotation written into the saved PDF","One-click rotate and download","100% in-browser, nothing uploaded"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as PDFLib from 'pdf-lib';
+    (function(){
+      var bytes=null,srcName='document';
+      function $(i){return document.getElementById(i);}
+      async function load(f){
+        $('drop').hidden=true;$('editor').hidden=false;
+        try{
+          bytes=await f.arrayBuffer();srcName=(f.name.replace(/\.[^.]+$/,'')||'document');var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});$('info').textContent=f.name+' · '+doc.getPageCount()+' pages';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      async function go(){
+        if(!bytes)return;$('status').textContent='Rotating…';var deg=parseInt($('deg').value,10);
+        try{
+          var doc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});
+          var np=doc.getPages().length;
+          doc.getPages().forEach(function(p){var cur=p.getRotation().angle||0;p.setRotation(PDFLib.degrees((cur+deg)%360));});
+          var out=await doc.save();var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/pdf'}));a.download=srcName+'-rotated.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+          $('status').textContent='Done — rotated '+np+' page'+(np===1?'':'s')+' by '+deg+'°.';
+        }catch(err){
+          $('status').textContent='Could not process this file — it may be corrupt or password-protected.';
+        }
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('go').onclick=window.SnapJarKit.guard('go',go);$('reset').onclick=function(){bytes=null;$('file').value='';$('status').textContent='';$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>

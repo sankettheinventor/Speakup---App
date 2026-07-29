@@ -1,0 +1,225 @@
+---
+import Base from '../layouts/Base.astro';
+const title = 'My Files — SnapJar';
+const description = 'Your PDFs and folders — stored only on your device.';
+---
+<Base title={title} description={description}>
+  <div class="lib">
+    <header class="lib-head">
+      <button id="libBack" class="lib-back" type="button" aria-label="Back" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h1 id="libH1">My Files</h1>
+    </header>
+
+    <div class="lib-actions">
+      <button class="lib-chip" id="actOpen" type="button"><span class="lic">📄</span>Open PDF</button>
+      <button class="lib-chip" id="actNew" type="button"><span class="lic">✎</span>New PDF</button>
+      <button class="lib-chip" id="actHl" type="button"><span class="lic">🖊️</span>Highlights</button>
+      <button class="lib-chip" id="actFolder" type="button"><span class="lic">📁</span>New folder</button>
+    </div>
+
+    <div id="libFolders" class="lib-folders"></div>
+    <div id="libGrid" class="lib-grid"></div>
+
+    <div id="libEmpty" class="lib-empty" hidden>
+      <div class="lib-empty-ic">🗂️</div>
+      <h2 id="libEmptyT">No files yet</h2>
+      <p id="libEmptyP">Open or create a PDF and it shows up here — kept 100% on your device.</p>
+    </div>
+  </div>
+
+  <style is:global>
+    .lib{max-width:1000px;margin:0 auto;padding:0 var(--app-pad,20px) var(--s6)}
+    .lib-head{display:flex;align-items:center;gap:6px;padding:var(--s5) 0 var(--s3)}
+    .lib-back{width:34px;height:34px;margin-left:-6px;border:0;background:none;color:var(--app-ink,var(--txt));cursor:pointer;display:grid;place-items:center;border-radius:9px}
+    .lib-back[hidden]{display:none}
+    .lib-back svg{width:22px;height:22px}
+    .lib-head h1{font-size:var(--t-lg);font-weight:800;letter-spacing:-.4px;color:var(--app-ink,var(--txt))}
+    /* action chips */
+    .lib-actions{display:flex;gap:9px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-bottom:var(--s4)}
+    .lib-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border:1px solid var(--app-line,var(--line));border-radius:12px;background:var(--app-tile,var(--surface));color:var(--app-ink,var(--txt));font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;transition:border-color var(--d-micro) var(--ease-out),transform var(--d-micro) var(--ease-out)}
+    .lib-chip:active{transform:scale(.96);border-color:var(--app-accent,var(--brand))}
+    .lib-chip .lic{font-size:15px}
+    /* folders */
+    .lib-folders{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--s4)}
+    .folder-card{display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--app-line,var(--line));border-radius:12px;background:var(--app-tile,var(--surface));cursor:pointer;box-shadow:var(--app-shadow,0 8px 20px -16px rgba(30,20,70,.2));transition:border-color var(--d-micro) var(--ease-out),transform var(--d-micro) var(--ease-out);animation:app-pop .32s var(--ease-out) both}
+    .folder-card:active{transform:scale(.99);border-color:var(--app-accent,var(--brand))}
+    .folder-ic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;background:linear-gradient(150deg,rgba(124,92,255,.16),rgba(124,92,255,.05))}
+    .folder-info{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px}
+    .folder-name{font-size:13px;font-weight:700;color:var(--app-ink,var(--txt));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .folder-meta{font-size:11px;color:var(--app-dim,var(--dim));flex:0 0 auto}
+    .folder-more,.doc-more{flex:0 0 auto;width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:var(--app-dim,var(--dim));font-size:17px;line-height:1;cursor:pointer;display:grid;place-items:center}
+    .folder-more:active,.doc-more:active{background:rgba(124,92,255,.12);color:var(--app-accent,var(--brand))}
+    /* document cards — 2-col preview grid */
+    .lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:14px}
+    .doc-card{position:relative;border:1px solid var(--app-line,var(--line));border-radius:16px;background:var(--app-tile,var(--surface));overflow:hidden;cursor:pointer;box-shadow:var(--app-shadow,0 10px 26px -16px rgba(30,20,70,.22));transition:border-color var(--d-micro) var(--ease-out),transform var(--d-micro) var(--ease-out),box-shadow var(--d-micro) var(--ease-out);animation:app-pop .34s var(--ease-out) both}
+    .doc-card:active{transform:scale(.98)}
+    .doc-card:hover{box-shadow:0 16px 36px -16px rgba(30,20,70,.34)}
+    .doc-thumb{aspect-ratio:1/1.04;background:#f2f1f7;display:grid;place-items:center;overflow:hidden;border-bottom:1px solid var(--app-line,var(--line))}
+    :root[data-theme="dark"] .doc-thumb{background:#0f0d18}
+    .doc-thumb img{width:100%;height:100%;object-fit:cover;object-position:top}
+    .doc-thumb-ph{font-size:40px;opacity:.5}
+    .doc-info{padding:10px 11px 12px;padding-right:30px}
+    .doc-name{font-size:13.5px;font-weight:700;color:var(--app-ink,var(--txt));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .doc-meta{font-size:11.5px;color:var(--app-dim,var(--dim));margin-top:2px}
+    .doc-more{position:absolute;right:5px;bottom:8px}
+    /* empty */
+    .lib-empty{text-align:center;padding:48px 18px}
+    .lib-empty-ic{font-size:48px}.lib-empty h2{font-size:var(--t-md);font-weight:800;margin:12px 0 6px;color:var(--app-ink,var(--txt))}
+    .lib-empty p{font-size:var(--t-sm);color:var(--app-dim,var(--dim));max-width:300px;margin:0 auto;line-height:1.55}
+    /* action sheet (built in JS) */
+    .lib-sheet{position:fixed;inset:0;z-index:240;background:rgba(8,6,16,.5);display:flex;align-items:flex-end;justify-content:center;animation:app-fade .2s ease both}
+    .lib-sheet[hidden]{display:none}
+    .lib-sheet-card{position:relative;background:var(--sheet-card,var(--app-bg));border:1px solid var(--sheet-line,var(--app-line));border-bottom:0;border-radius:24px 24px 0 0;width:100%;max-width:520px;padding:8px 14px calc(16px + env(safe-area-inset-bottom));box-shadow:var(--sheet-shadow,0 -16px 50px -12px rgba(0,0,0,.45));animation:app-rise .28s cubic-bezier(.22,1,.36,1) both}
+    .lib-sheet-card::before{content:"";display:block;width:40px;height:4px;border-radius:4px;background:var(--sheet-grab,rgba(140,130,160,.4));margin:0 auto 12px}
+    .lib-mtitle{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--app-dim,var(--dim));padding:2px 8px 8px}
+    .lib-mi{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:14px 13px;border:0;background:none;color:var(--app-ink,var(--txt));font:inherit;font-size:15px;font-weight:600;cursor:pointer;border-radius:12px}
+    .lib-mi:active{background:var(--sheet-row-active,var(--app-tile))}
+    .lib-mi.danger{color:#e5484d}
+    .lib-mi .mic{font-size:18px;width:22px;text-align:center}
+  </style>
+
+  <script is:inline>
+    (function () {
+      var R = window.SJRecents;
+      var H1 = document.getElementById('libH1'), back = document.getElementById('libBack');
+      var foldersEl = document.getElementById('libFolders'), grid = document.getElementById('libGrid');
+      var empty = document.getElementById('libEmpty'), emptyT = document.getElementById('libEmptyT'), emptyP = document.getElementById('libEmptyP');
+      var current = null, currentName = '';
+      var DOCPH = '📄';
+
+      function K(){ return window.SnapJarKit; }
+      function toast(m,t){ if(K()&&K().toast) K().toast(m,t); }
+      function ask(opts){ if(K()&&K().ask) return K().ask(opts); return Promise.resolve(prompt(opts.title||'', opts.value||'')); }
+
+      function fmtSize(b){ if(!b) return ''; if(b<1024) return b+' B'; if(b<1048576) return Math.round(b/1024)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+      function fmtWhen(ts){ var d=Date.now()-ts,m=60000,h=3600000,day=86400000;
+        if(d<m) return 'Just now'; if(d<h) return Math.floor(d/m)+' min ago'; if(d<day) return Math.floor(d/h)+'h ago';
+        if(d<2*day) return 'Yesterday'; if(d<7*day) return Math.floor(d/day)+'d ago';
+        try{ return new Date(ts).toLocaleDateString(undefined,{day:'numeric',month:'short'}); }catch(e){ return ''; } }
+
+      /* ---- bottom action sheet (built dynamically) ---- */
+      function sheet(title, items){
+        var ov=document.createElement('div'); ov.className='lib-sheet';
+        var card=document.createElement('div'); card.className='lib-sheet-card';
+        if(title){ var t=document.createElement('div'); t.className='lib-mtitle'; t.textContent=title; card.appendChild(t); }
+        items.forEach(function(it){
+          if(!it) return;
+          var b=document.createElement('button'); b.type='button'; b.className='lib-mi'+(it.danger?' danger':'');
+          b.innerHTML='<span class="mic">'+(it.ic||'')+'</span><span></span>'; b.lastChild.textContent=it.label;
+          b.onclick=function(){ close(); it.on&&it.on(); };
+          card.appendChild(b);
+        });
+        function close(){ ov.remove(); if(window.SnapJarKit&&window.SnapJarKit.adResume) window.SnapJarKit.adResume(); }
+        ov.appendChild(card); ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+        document.body.appendChild(ov);
+        if(window.SnapJarKit&&window.SnapJarKit.adPause) window.SnapJarKit.adPause();
+      }
+
+      /* ---- actions ---- */
+      function openDoc(it){
+        if(!it) return;
+        var id = typeof it==='object' ? it.id : it;
+        var kind = typeof it==='object' ? (it.kind||'pdf') : 'pdf';
+        var nm0 = typeof it==='object' ? (it.name||'') : '';
+        if(kind==='pdf'){ location.href='/tools/pdf-studio.html?recent='+encodeURIComponent(id); return; }
+        // Word/Excel/PowerPoint/CSV/text → open in the in-app doc reader (same path as notifications)
+        if(/\.(docx?|xlsx?|pptx?|csv|txt)$/i.test(nm0)){ location.href='/tools/pdf-studio.html?docopen='+encodeURIComponent(id); return; }
+        // image / other → open in the user's chosen app via a temporary system grant (no in-app preview)
+        if(!R||!R.get){ toast('Open the app to use this file','info'); return; }
+        R.get(id).then(function(rec){
+          var blob = rec && rec.blob; if(!blob){ toast('File unavailable','warn'); return; }
+          if(window.SnapJarKit && window.SnapJarKit.openExternal) window.SnapJarKit.openExternal(blob, rec.name||it.name||'file');
+        });
+      }
+      function fileAct(it, fn){ if(!R||!R.get) return; R.get(it.id).then(function(rec){ if(rec&&rec.blob&&window.SnapJarKit&&window.SnapJarKit[fn]) window.SnapJarKit[fn](rec.blob, rec.name||it.name||'file'); else toast('File unavailable','warn'); }); }
+
+      function docMenu(it){
+        listFoldersFor(function(folders){
+          sheet(it.name, [
+            { ic:'📂', label:'Open', on:function(){ openDoc(it); } },
+            { ic:'⬇️', label:'Save to device', on:function(){ fileAct(it, 'exportFile'); } },
+            folders.length || it.folderId ? { ic:'📁', label:'Move to folder…', on:function(){ moveMenu(it, folders); } } : null,
+            { ic:'✏️', label:'Rename', on:function(){ ask({title:'Rename', value:it.name, ok:'Save'}).then(function(v){ if(v){ R.rename(it.id, v).then(load); toast('Renamed','ok'); } }); } },
+            { ic:'🗑️', label:'Delete', danger:true, on:function(){ ask({title:'Delete "'+it.name+'"?', body:"This can't be undone.", ok:'Delete', danger:true, confirm:true}).then(function(yes){ if(yes){ R.remove(it.id).then(load); toast('Deleted','ok'); } }); } }
+          ]);
+        });
+      }
+      function moveMenu(it, folders){
+        var items = folders.filter(function(f){ return f.id!==it.folderId; }).map(function(f){ return { ic:'📁', label:f.name, on:function(){ R.move(it.id,f.id).then(load); toast('Moved to '+f.name,'ok'); } }; });
+        if(it.folderId) items.unshift({ ic:'↑', label:'Remove from folder', on:function(){ R.move(it.id,null).then(load); toast('Moved out','ok'); } });
+        items.push({ ic:'➕', label:'New folder…', on:function(){ newFolder(function(fid,fname){ R.move(it.id,fid).then(load); toast('Moved to '+fname,'ok'); }); } });
+        sheet('Move "'+it.name+'"', items);
+      }
+      function folderMenu(f){
+        sheet(f.name, [
+          { ic:'📂', label:'Open folder', on:function(){ enterFolder(f); } },
+          { ic:'✏️', label:'Rename', on:function(){ ask({title:'Rename folder', value:f.name, ok:'Save'}).then(function(v){ if(v){ R.renameFolder(f.id,v).then(load); } }); } },
+          { ic:'🗑️', label:'Delete folder', danger:true, on:function(){ ask({title:'Delete folder "'+f.name+'"?', body:'The folder is removed; its files stay in My Files.', ok:'Delete', danger:true, confirm:true}).then(function(yes){ if(yes){ R.removeFolder(f.id).then(load); toast('Folder deleted — files kept','ok'); } }); } }
+        ]);
+      }
+      function newFolder(cb){
+        ask({title:'New folder name', value:'', placeholder:'e.g. Invoices', ok:'Create'}).then(function(v){
+          if(!v) return; R.addFolder(v).then(function(id){ if(cb) cb(id,v); else load(); toast('Folder created','ok'); });
+        });
+      }
+      // push a history entry so the hardware/OS Back returns to the folder LIST (not out of My Files)
+      function enterFolder(f){ current=f.id; currentName=f.name; try{ history.pushState({sjFolder:f.id},''); }catch(e){} render(); }
+      function goRoot(){ current=null; currentName=''; render(); }
+      window.addEventListener('popstate', function(){ if(current) goRoot(); });
+
+      function listFoldersFor(cb){ R.listFolders().then(cb); }
+
+      /* ---- render ---- */
+      function thumb(it){
+        if(it.thumb) return '<div class="doc-thumb"><img src="'+it.thumb+'" alt="" loading="lazy"></div>';
+        return '<div class="doc-thumb"><span class="doc-thumb-ph">'+DOCPH+'</span></div>';
+      }
+      function render(){
+        back.hidden = !current; H1.textContent = current ? currentName : 'My Files';
+        foldersEl.innerHTML=''; grid.innerHTML='';
+        if(!R){ empty.hidden=false; emptyT.textContent='Open the app to use My Files'; emptyP.textContent=''; return; }
+        Promise.all([ current?Promise.resolve([]):R.listFolders(), R.list(current) ]).then(function(out){
+          var folders=out[0]||[], files=out[1]||[];
+          // folders (root only)
+          folders.forEach(function(f){
+            R.folderCount(f.id).then(function(n){
+              var card=document.createElement('div'); card.className='folder-card';
+              card.innerHTML='<span class="folder-ic">📁</span><div class="folder-info"><div class="folder-name"></div><div class="folder-meta"></div></div><button class="folder-more" type="button" aria-label="Folder options">⋯</button>';
+              card.querySelector('.folder-name').textContent=f.name;
+              card.querySelector('.folder-meta').textContent=n+(n===1?' file':' files');
+              card.addEventListener('click',function(e){ if(e.target.closest('.folder-more')) return; enterFolder(f); });
+              card.querySelector('.folder-more').addEventListener('click',function(e){ e.stopPropagation(); folderMenu(f); });
+              foldersEl.appendChild(card);
+            });
+          });
+          // files
+          files.forEach(function(it){
+            var card=document.createElement('div'); card.className='doc-card';
+            card.innerHTML=thumb(it)+'<div class="doc-info"><div class="doc-name"></div><div class="doc-meta"></div></div><button class="doc-more" type="button" aria-label="Options">⋯</button>';
+            card.querySelector('.doc-name').textContent=it.name||'Document.pdf';
+            card.querySelector('.doc-meta').textContent=fmtWhen(it.ts)+(it.size?(' · '+fmtSize(it.size)):'');
+            card.addEventListener('click',function(e){ if(e.target.closest('.doc-more')) return; openDoc(it); });
+            card.querySelector('.doc-more').addEventListener('click',function(e){ e.stopPropagation(); docMenu(it); });
+            grid.appendChild(card);
+          });
+          var none = !folders.length && !files.length;
+          empty.hidden = !none;
+          if(none){ emptyT.textContent = current ? 'This folder is empty' : 'No files yet'; emptyP.textContent = current ? 'Move a file here from its ⋯ menu.' : 'Anything you create, scan, convert or export shows up here — kept 100% on your device.'; }
+          /* in-content MREC fills the empty My Files area (high-CPM); a populated list shows the normal top banner */
+          try { if(window.SnapJarKit){ if(none && window.SnapJarKit.adMrec) window.SnapJarKit.adMrec(); else if(!none && window.SnapJarKit.adRestore) window.SnapJarKit.adRestore(); } }catch(e){}
+        }).catch(function(){ empty.hidden=false; });
+      }
+      function load(){ render(); }
+
+      /* ---- wire ---- */
+      back.addEventListener('click', function(){ try{ history.back(); }catch(e){ goRoot(); } });
+      document.getElementById('actOpen').addEventListener('click', function(){ location.href='/tools/pdf-studio.html?open=1'; });
+      document.getElementById('actHl').addEventListener('click', function(){ location.href = document.body.classList.contains('is-app') ? '/highlights.html' : '/highlights'; });
+      document.getElementById('actNew').addEventListener('click', function(){ location.href='/tools/pdf-studio.html?new=1'; });
+      document.getElementById('actFolder').addEventListener('click', function(){ if(R) newFolder(); else toast('Open the app to create folders','info'); });
+      load();
+    })();
+  </script>
+</Base>

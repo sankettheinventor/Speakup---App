@@ -1,0 +1,546 @@
+---
+import Base from '../../layouts/Base.astro';
+const title = 'Scan to Text (OCR) — SnapJar';
+const description = 'Scan text from any document, book, screen or sign and turn it into editable, copyable text — 100% on your device.';
+---
+<Base title={title} description={description}>
+  <div class="tx-app" id="txApp">
+    <!-- loading + landing / error -->
+    <div class="tx-screen tx-load" id="txLoad">
+      <button class="tx-icon tx-load-x" id="txLoadClose" type="button" aria-label="Close" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <div class="tx-spin" id="txSpin" aria-hidden="true"></div>
+      <div class="tx-hero-ic" id="txHero" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M7.5 9.5h9"/><path d="M7.5 12.5h9"/><path d="M7.5 15.5h5"/></svg></div>
+      <div class="tx-load-t" id="txLoadT">Opening scanner…</div>
+      <div class="tx-load-s" id="txLoadS"></div>
+      <button class="tx-btn" id="txRetry" type="button" hidden>Scan text</button>
+      <button class="tx-btn tx-btn-ghost" id="txGalBtn" type="button" hidden>Choose from gallery</button>
+    </div>
+
+    <!-- result: editable recognized text -->
+    <div class="tx-screen tx-result" id="txResult" hidden>
+      <div class="tx-top">
+        <button class="tx-icon" id="txClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <span class="tx-ttl">Scanned text</span>
+        <button class="tx-icon" id="txAgain2" type="button" aria-label="Scan again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+      </div>
+      <div class="tx-hint">Tap anywhere to edit, then copy, share or save.</div>
+      <!-- One document, ONE card: the title and the body are a single sheet of paper, not two
+           floating boxes. A long scan used to look like it had been arbitrarily split in two. -->
+      <div class="tx-doc" id="txDoc">
+        <div class="tx-title" id="txTitle" contenteditable="true" role="textbox" aria-label="Document title" data-ph="Add a title"></div>
+        <textarea class="tx-text" id="txText" spellcheck="false" aria-label="Recognized text"></textarea>
+      </div>
+      <!-- Listen player: the whole point of scanning notes is to not have to read them.
+           Driven by the native BgTts service, so it keeps playing on the commute with the
+           screen off and full lock-screen controls. -->
+      <div class="tx-player" id="txPlayer" hidden>
+        <button class="tx-pbtn" id="txPlay" type="button" aria-label="Pause"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.3"/><rect x="14" y="5" width="4" height="14" rx="1.3"/></svg></button>
+        <div class="tx-pnow" id="txPNow" role="status" aria-live="polite">Reading aloud…</div>
+        <button class="tx-pbtn tx-pghost" id="txVoiceBtn" type="button" aria-label="Voice and speed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+        <button class="tx-pbtn tx-pghost" id="txPStop" type="button" aria-label="Stop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+
+      <!-- Voice / speed / pitch for the Listen flow. Writes the SAME preference keys as the
+           reader, so a voice chosen here is the voice you get everywhere. -->
+      <div class="tx-vsheet" id="txVSheet" hidden>
+        <div class="tx-vcard" role="dialog" aria-modal="true" aria-label="Voice and speed">
+          <div class="tx-vh">Voice &amp; speed</div>
+          <div class="tx-vlist" id="txVList"></div>
+          <div class="tx-vrow">
+            <label class="tx-vlab" for="txRate">Speed</label>
+            <input id="txRate" class="tx-vrange" type="range" min="0.6" max="1.8" step="0.05" value="1" aria-label="Speed" />
+            <span class="tx-vval" id="txRateV">1×</span>
+          </div>
+          <div class="tx-vrow">
+            <label class="tx-vlab" for="txPitch">Pitch</label>
+            <input id="txPitch" class="tx-vrange" type="range" min="0.7" max="1.4" step="0.05" value="1" aria-label="Pitch" />
+            <span class="tx-vval" id="txPitchV">1.0</span>
+          </div>
+          <button class="tx-vdone" id="txVDone" type="button">Done</button>
+        </div>
+      </div>
+
+      <div class="tx-actions">
+        <button class="tx-act" id="txCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg><span>Copy</span></button>
+        <button class="tx-act" id="txShare" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>Share</span></button>
+        <button class="tx-act" id="txSave" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/></svg><span>Save PDF</span></button>
+        <button class="tx-act tx-act-primary" id="txListen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 1 16 0"/><rect x="2.5" y="13" width="4.5" height="7" rx="2.2" fill="currentColor" stroke="none"/><rect x="17" y="13" width="4.5" height="7" rx="2.2" fill="currentColor" stroke="none"/></svg><span>Listen</span></button>
+      </div>
+    </div>
+    <input id="txGal" type="file" accept="image/*" multiple hidden />
+  </div>
+
+  <style is:global>
+    /* Theme-aware + premium — follows the app's light/dark theme via the shared tokens
+       (was a hardcoded dark screen, which looked broken in the app's light theme). */
+    body.tx-on{ overflow:hidden; }
+    .tx-app{ position:fixed; inset:0; z-index:4000;
+      background:var(--app-canvas, var(--bg, #f3f2f9)); color:var(--app-ink, var(--txt, #16121f));
+      font-family:'Jakarta',system-ui,sans-serif; -webkit-user-select:none; user-select:none;
+      padding-top:env(safe-area-inset-top); }
+    .tx-screen{ position:absolute; inset:0; display:flex; flex-direction:column; }
+    .tx-screen[hidden]{ display:none; }
+
+    .tx-load{ align-items:center; justify-content:center; gap:14px; text-align:center; padding:0 34px; }
+    .tx-load-x{ position:absolute; top:calc(12px + env(safe-area-inset-top)); left:16px; }
+    .tx-load-x[hidden]{ display:none; }
+    .tx-hero-ic{ width:96px; height:96px; border-radius:28px; display:grid; place-items:center; margin-bottom:6px;
+      background:linear-gradient(140deg, var(--app-accent-2,#a78bfa), var(--app-accent,#6b4dff));
+      box-shadow:0 20px 48px -14px var(--app-accent,#6b4dff), inset 0 1px 0 rgba(255,255,255,.28); }
+    .tx-hero-ic[hidden]{ display:none; } .tx-hero-ic svg{ width:46px; height:46px; color:#fff; }
+    .tx-spin{ width:46px; height:46px; border-radius:50%; border:3px solid color-mix(in srgb, var(--app-ink,#16121f) 12%, transparent); border-top-color:var(--app-accent,#6b4dff); animation:tx-rot .8s linear infinite; }
+    .tx-spin[hidden]{ display:none; } @keyframes tx-rot{ to{ transform:rotate(360deg); } }
+    .tx-load-t{ font-size:19px; font-weight:800; letter-spacing:-.02em; }
+    .tx-load-s{ font-size:13.5px; color:var(--app-dim, var(--dim, #6f6987)); line-height:1.55; max-width:300px; }
+    .tx-btn{ margin-top:8px; width:100%; max-width:300px; padding:15px; border:0; border-radius:16px; cursor:pointer;
+      background:linear-gradient(135deg, var(--app-accent-2,#a78bfa), var(--app-accent,#6b4dff)); color:#fff; font:inherit; font-weight:800; font-size:16px;
+      box-shadow:0 14px 32px -12px var(--app-accent,#6b4dff), inset 0 1px 0 rgba(255,255,255,.24); }
+    .tx-btn[hidden]{ display:none; } .tx-btn:active{ transform:scale(.97); }
+    .tx-btn-ghost{ background:color-mix(in srgb, var(--app-ink,#16121f) 7%, transparent); color:var(--app-ink, var(--txt, #16121f)); box-shadow:none; font-size:15px; padding:13px; margin-top:0; }
+
+    .tx-top{ display:flex; align-items:center; gap:12px; padding:calc(12px + env(safe-area-inset-top)) 16px 10px; flex:0 0 auto; }
+    .tx-ttl{ flex:1; text-align:center; font-size:16.5px; font-weight:800; letter-spacing:-.01em; }
+    .tx-icon{ width:42px; height:42px; border-radius:50%; border:0; background:color-mix(in srgb, var(--app-ink,#16121f) 7%, transparent); color:var(--app-ink, var(--txt, #16121f)); display:grid; place-items:center; cursor:pointer; flex:0 0 auto; transition:transform .12s, background .14s; }
+    .tx-icon svg{ width:20px; height:20px; } .tx-icon:active{ transform:scale(.92); }
+    .tx-hint{ text-align:center; font-size:12.5px; color:var(--app-dim, var(--dim, #6f6987)); padding:0 20px 8px; flex:0 0 auto; }
+    /* the single document sheet — owns the border/shadow so its children read as one surface */
+    .tx-doc{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; margin:0 16px; overflow:hidden;
+      border:1px solid var(--app-line, var(--line, #ecebf3)); border-radius:18px; background:var(--app-tile, var(--surface, #fff));
+      box-shadow:var(--app-shadow, 0 8px 24px -16px rgba(22,16,44,.2)); transition:border-color .12s, box-shadow .12s; }
+    .tx-doc:focus-within{ border-color:var(--app-accent,#6b4dff); box-shadow:0 0 0 4px color-mix(in srgb, var(--app-accent,#6b4dff) 13%, transparent); }
+    .tx-title{ flex:0 0 auto; margin:0; padding:16px 18px 8px; border:0; background:transparent; box-shadow:none;
+      color:var(--app-ink, var(--txt, #16121f)); font-size:19px; font-weight:800; letter-spacing:-.02em; line-height:1.3; outline:none; -webkit-user-select:text; user-select:text; }
+    .tx-title:empty:before{ content:attr(data-ph); color:var(--app-dim, var(--dim, #6f6987)); font-weight:700; opacity:.62; }
+    /* hairline only when a real heading was detected, so an untitled scan stays one clean block */
+    .tx-doc.has-title .tx-text{ border-top:1px solid var(--app-line, var(--line, #ecebf3)); }
+    .tx-text{ flex:1 1 auto; min-height:0; margin:0; padding:12px 18px 18px; border:0; border-radius:0; background:transparent; box-shadow:none;
+      color:var(--app-ink, var(--txt, #16121f)); font:inherit; font-size:15.5px; line-height:1.7; resize:none; outline:none; -webkit-user-select:text; user-select:text; white-space:pre-wrap; }
+    /* `display:flex` on a class beats the UA style for [hidden], so the bar stayed on screen
+       even when hidden was set. Restore it explicitly. */
+    .tx-player[hidden]{ display:none; }
+    .tx-player{ display:flex; align-items:center; gap:12px; margin:12px 16px 0; padding:10px 12px; border-radius:16px; flex:0 0 auto;
+      background:color-mix(in srgb, var(--app-accent,#6b4dff) 10%, var(--app-tile, var(--surface,#fff)));
+      border:1px solid color-mix(in srgb, var(--app-accent,#6b4dff) 24%, transparent); }
+    .tx-pbtn{ width:44px; height:44px; flex:0 0 auto; border:0; border-radius:50%; display:grid; place-items:center; cursor:pointer;
+      background:linear-gradient(135deg,var(--app-accent-2,#a78bfa),var(--app-accent,#6b4dff)); color:#fff; }
+    .tx-pbtn svg{ width:20px; height:20px; }
+    .tx-pbtn:active{ transform:scale(.95); }
+    .tx-pghost{ background:color-mix(in srgb, var(--app-ink,#16121f) 8%, transparent); color:var(--app-ink,var(--txt,#16121f)); }
+    .tx-pnow{ flex:1; min-width:0; font-size:13.5px; line-height:1.45; color:var(--app-ink,var(--txt,#16121f)); font-weight:600;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .tx-vsheet[hidden]{ display:none; }
+    .tx-vsheet{ position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.45); }
+    .tx-vcard{ width:100%; max-width:520px; max-height:82vh; overflow:auto; padding:14px 18px calc(18px + env(safe-area-inset-bottom));
+      background:var(--app-tile, var(--surface,#fff)); border-radius:26px 26px 0 0; box-shadow:0 -16px 50px -12px rgba(0,0,0,.45); }
+    .tx-vh{ font-size:16px; font-weight:800; letter-spacing:-.01em; color:var(--app-ink,var(--txt,#16121f)); padding:4px 0 10px; }
+    .tx-vlist{ max-height:38vh; overflow:auto; display:flex; flex-direction:column; gap:7px; margin-bottom:6px; }
+    .tx-vitem{ display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 12px; border-radius:13px; cursor:pointer; text-align:left;
+      border:1px solid var(--app-line,#ecebf3); background:transparent; color:var(--app-ink,var(--txt,#16121f)); font:inherit; }
+    .tx-vitem[aria-selected="true"]{ border-color:var(--app-accent,#6b4dff); background:color-mix(in srgb,var(--app-accent,#6b4dff) 11%,transparent); }
+    .tx-vitem b{ font-size:14px; font-weight:700; }
+    .tx-vitem small{ display:block; font-size:11.5px; color:var(--app-dim,var(--dim,#6f6987)); }
+    .tx-vrow{ display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--app-line,#ecebf3); }
+    .tx-vlab{ flex:0 0 52px; font-size:13.5px; font-weight:700; color:var(--app-ink,var(--txt,#16121f)); }
+    .tx-vrange{ flex:1; min-width:0; height:44px; accent-color:var(--app-accent,#6b4dff); background:transparent; }
+    .tx-vval{ flex:0 0 42px; text-align:right; font-size:13px; font-weight:700; color:var(--app-dim,var(--dim,#6f6987)); font-variant-numeric:tabular-nums; }
+    .tx-vdone{ width:100%; min-height:48px; margin-top:8px; border:0; border-radius:14px; font:inherit; font-weight:800; font-size:15px; cursor:pointer;
+      background:linear-gradient(135deg,var(--app-accent-2,#a78bfa),var(--app-accent,#6b4dff)); color:#fff; }
+    .tx-actions{ display:flex; gap:10px; padding:14px 16px calc(18px + env(safe-area-inset-bottom)); flex:0 0 auto; }
+    .tx-act{ flex:1; display:inline-flex; flex-direction:column; align-items:center; gap:5px; padding:13px 6px; border:0; border-radius:15px; cursor:pointer; background:color-mix(in srgb, var(--app-ink,#16121f) 7%, transparent); color:var(--app-ink, var(--txt, #16121f)); font:inherit; font-weight:700; font-size:12px; transition:transform .12s; }
+    .tx-act svg{ width:21px; height:21px; } .tx-act:active{ transform:scale(.96); }
+    .tx-act-primary{ background:linear-gradient(135deg, var(--app-accent-2,#a78bfa), var(--app-accent,#6b4dff)); color:#fff; box-shadow:0 12px 28px -12px var(--app-accent,#6b4dff), inset 0 1px 0 rgba(255,255,255,.22); }
+  </style>
+
+  <script>
+    import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';   // static (bundled) — matches the working PDF tools; avoids a fragile lazy chunk
+    (function () {
+      var $ = function (id){ return document.getElementById(id); };
+      var K = function (){ return window.SnapJarKit; };
+      function toast(m, t){ if (K() && K().toast) K().toast(m, t || 'info'); }
+      function haptic(s){ if (K() && K().haptic) K().haptic(s); }
+      function plugin(n){ return (K() && K().plugin) ? K().plugin(n) : null; }
+
+      var DS = plugin('DocumentScanner'), Cap = window.Capacitor, triedInstall = false;
+      document.body.classList.add('tx-on');
+
+      /* Arrived via Share → SnapJar with plain text: skip the camera entirely and go straight
+         to the result screen with the text loaded, one tap from Listen. */
+      function bootShared(){
+        var txt = '', title = '';
+        try { txt = sessionStorage.getItem('sj_shared_text') || ''; title = sessionStorage.getItem('sj_shared_title') || ''; } catch (e) {}
+        try { sessionStorage.removeItem('sj_shared_text'); sessionStorage.removeItem('sj_shared_title'); } catch (e) {}
+        if (!txt.trim()) return false;
+        document.body.classList.add('tx-on');
+        var raw = txt.trim(), clean = formatOcrText(cleanOcr(cleanSharedText(raw)));
+        var dropped = raw.length - clean.length;
+        var lines = clean.split('\n'), ti = 0;
+        while (ti < lines.length && !lines[ti].trim()) ti++;
+        var first = (lines[ti] || '').trim();
+        // a Share usually carries a subject/page title — prefer it over guessing from the body
+        if (title && title.trim()){
+          $('txTitle').textContent = title.trim(); $('txText').value = clean; $('txDoc').classList.add('has-title');
+        } else if (isHeading(first)){
+          $('txTitle').textContent = first; $('txText').value = lines.slice(ti + 1).join('\n').replace(/^\s+/, ''); $('txDoc').classList.add('has-title');
+        } else {
+          $('txTitle').textContent = ''; $('txText').value = clean; $('txDoc').classList.remove('has-title');
+        }
+        show('txResult');
+        if (K() && K().toast) K().toast(dropped > 200 ? 'Cleaned up the page — tap Listen' : 'Ready — tap Listen to hear it', 'ok');
+        return true;
+      }
+      function boot(){
+        var qs = new URLSearchParams(location.search);
+        if (qs.get('shared') === '1' && bootShared()) return;
+        // ?src=gallery — the Listen hub's "A photo": skip the camera, go straight to the picker
+        if (qs.get('src') === 'gallery'){ showLand(); var g = $('txGal'); g.value = ''; g.click(); return; }
+        if (DS && DS.scanDocument) capture(); else showLand();
+      }
+      function busy(t, s){ show('txLoad'); $('txSpin').hidden = false; $('txHero').hidden = true; $('txLoadClose').hidden = true; $('txRetry').hidden = true; $('txGalBtn').hidden = true; $('txLoadT').textContent = t || 'Working…'; $('txLoadS').textContent = s || ''; }
+      function showLand(){
+        show('txLoad'); $('txSpin').hidden = true; $('txHero').hidden = false; $('txLoadClose').hidden = false;
+        $('txLoadT').textContent = 'Scan text';
+        $('txLoadS').textContent = DS ? 'Point at a page, book, screen or sign — we’ll pull out the text for you.' : 'Pick a photo and we’ll pull out the text.';
+        $('txRetry').hidden = false; $('txRetry').textContent = DS ? 'Open camera' : 'Choose photo';
+        $('txGalBtn').hidden = false;
+      }
+      function showErr(title, sub){ show('txLoad'); $('txSpin').hidden = true; $('txHero').hidden = false; $('txLoadClose').hidden = false; $('txLoadT').textContent = title; $('txLoadS').textContent = sub || ''; $('txRetry').hidden = false; $('txRetry').textContent = 'Try again'; $('txGalBtn').hidden = false; }
+      $('txLoadClose').addEventListener('click', leave);
+
+      /* ---- capture via native scanner (auto-crop), then OCR ---- */
+      async function ensureModule(){
+        try { var a = await DS.isGoogleDocumentScannerModuleAvailable(); if (a && a.available === true) return true; } catch (e) {}
+        busy('Preparing the scanner…', 'One-time setup (a few MB)');
+        return new Promise(function (resolve){ var done = false; function fin(v){ if (!done){ done = true; resolve(v); } }
+          try { DS.addListener('googleDocumentScannerModuleInstallProgress', function (ev){ if (ev && (ev.progress >= 100 || ev.state === 4)) fin(true); else if (ev && ev.state === 5) fin(false); }); } catch (e) {}
+          DS.installGoogleDocumentScannerModule().catch(function (){ fin(false); }); setTimeout(function (){ fin(true); }, 45000);
+        });
+      }
+      async function capture(){
+        busy('Opening scanner…');
+        try {
+          var res = await DS.scanDocument({ resultFormats: 'JPEG', galleryImportAllowed: true, scannerMode: 'FULL', pageLimit: 10 });
+          var uris = (res && res.scannedImages) || [];
+          if (!uris.length){ showLand(); return; }          // backed out — not a failure
+          await ocrAll(uris);   // raw native URIs → native ML Kit OCR (convertFileSrc is only used by the tesseract web fallback)
+        } catch (e){
+          var msg = (e && (e.message || e)) + '';
+          if (/cancel|dismiss|back|user/i.test(msg)){ showLand(); return; }
+          if (!triedInstall && /module|unavailable|not available|install/i.test(msg)){ triedInstall = true; if (await ensureModule()) return capture(); }
+          if (/permission|denied|camera|not allowed/i.test(msg)) showErr('Camera access is off', 'Turn on camera access for SnapJar in Settings, or pick a photo from your gallery.');
+          else showErr('Couldn’t start the scanner', 'Give it another try, or pick a photo from your gallery.');
+        }
+      }
+
+      /* ---- gallery fallback ---- */
+      $('txRetry').addEventListener('click', function (){ haptic('light'); if (DS) capture(); else { var i = $('txGal'); i.value = ''; i.click(); } });
+      $('txGalBtn').addEventListener('click', function (){ var i = $('txGal'); i.value = ''; i.click(); });
+      $('txGal').addEventListener('change', async function (e){ var fs = e.target.files; if (!fs || !fs.length){ return; } await ocrAll(Array.prototype.slice.call(fs)); });
+
+      /* ---- OCR: native ML Kit in the app (fast/offline/reliable), tesseract.js only as a web fallback ---- */
+      var _worker = null;
+      async function tessWorker(){ if (_worker) return _worker; var T = await import('tesseract.js'); var cw = T.createWorker || (T.default && T.default.createWorker);
+        _worker = await cw('eng', 1, { workerPath: '/assets/tesseract/worker.min.js', langPath: '/assets/tesseract', corePath: '/assets/tesseract', workerBlobURL: false }); return _worker; }
+      function fileToB64(file){ return new Promise(function (res, rej){ var r = new FileReader(); r.onload = function (){ res(String(r.result)); }; r.onerror = function (){ rej(new Error('read failed')); }; r.readAsDataURL(file); }); }
+      async function ocrOne(src, OCR){
+        if (OCR){                                            // native ML Kit
+          /* notifyOnBackground: the plugin posts the "done" notification itself if the user has
+             left the app — the JS that would otherwise schedule it is frozen while backgrounded.
+             Silent when the app is on screen. */
+          if (typeof src === 'string'){ var r = await OCR.recognize({ path: src, notifyOnBackground: true }); return ((r && r.text) || '').trim(); }
+          var b64 = await fileToB64(src);    var r2 = await OCR.recognize({ base64: b64, notifyOnBackground: true }); return ((r2 && r2.text) || '').trim();
+        }
+        var w = await tessWorker();                          // tesseract.js fallback (web)
+        var img = (typeof src === 'string') ? ((Cap && Cap.convertFileSrc) ? Cap.convertFileSrc(src) : src) : src;
+        var rr = await w.recognize(img); return ((rr && rr.data && rr.data.text) || '').trim();
+      }
+      async function ocrAll(sources){
+        busy('Reading text…', sources.length > 1 ? ('Page 1 of ' + sources.length) : '');
+        var OCR = plugin('TextOcr'); OCR = (OCR && OCR.recognize) ? OCR : null;
+        try {
+          var out = [];
+          for (var i = 0; i < sources.length; i++){
+            $('txLoadS').textContent = sources.length > 1 ? ('Page ' + (i + 1) + ' of ' + sources.length) : '';
+            out.push(await ocrOne(sources[i], OCR));
+          }
+          var text = formatOcrText(cleanOcr(out.join('\n\n').trim()));
+          haptic('light');
+          if (!text){ showErr('No text found', 'Try a sharper, well-lit photo with the text filling the frame.'); return; }
+          // Promote the first line to the title ONLY if it really reads like a heading. ML Kit
+          // joins wrapped lines into whole paragraphs, so "line 1" is often an entire paragraph —
+          // blindly promoting it rendered body prose as a giant bold heading and made one scan
+          // look like it had been split into two cards. When in doubt, keep everything together.
+          var lines = text.split('\n'), ti = 0;
+          while (ti < lines.length && !lines[ti].trim()) ti++;
+          var first = (lines[ti] || '').trim();
+          if (isHeading(first)){
+            $('txTitle').textContent = first;
+            $('txText').value = lines.slice(ti + 1).join('\n').replace(/^\s+/, '');
+            $('txDoc').classList.add('has-title');
+          } else {
+            $('txTitle').textContent = '';                        // placeholder invites a title
+            $('txText').value = lines.slice(ti).join('\n').replace(/^\s+/, '');
+            $('txDoc').classList.remove('has-title');
+          }
+          show('txResult');
+        } catch (e){ var em = ((e && (e.message || e)) + '').slice(0, 140); showErr('Couldn’t read the text', em || 'Please try again with a clearer photo.'); }
+      }
+
+      /* Does this line read like a document heading rather than body prose?
+         Headings are short, few words, and don't end in sentence punctuation. A joined OCR
+         paragraph fails all three, so it correctly stays in the body. */
+      function isHeading(s){
+        s = (s || '').trim();
+        if (!s) return false;
+        if (s.length > 64) return false;                  // a paragraph, not a heading
+        if (s.split(/\s+/).length > 10) return false;
+        if (/[.!?,;:]$/.test(s)) return false;            // sentences end in punctuation; headings rarely do
+        if (/^([•\-*]|\d+[.)])\s/.test(s)) return false;  // a list item, not a title
+        return true;
+      }
+
+      /* Preserve list structure from OCR: normalize every bullet glyph to a single "•" (the only
+         bullet Helvetica/WinAnsi can draw in the PDF) and normalize numbered items, so lists survive
+         instead of collapsing to flat prose. Native ML Kit already joins wrapped lines into paragraphs. */
+      function formatOcrText(raw){
+        var bullet = /^(\s*)[•·▪◦‣⁃∙◘●○◆✦*]\s+(.*)$/;
+        var dash   = /^(\s*)[\-–—]\s+(.*)$/;
+        var numbered = /^(\s*)(\d{1,3}|[a-zA-Z]|[ivxIVX]{1,4})[.)\]]\s+(.+)$/;
+        return String(raw || '').replace(/\r/g, '').split('\n').map(function (ln){
+          var mb = ln.match(bullet) || ln.match(dash);
+          if (mb) return mb[1] + '•  ' + mb[2].trim();
+          var mn = ln.match(numbered);
+          if (mn) return mn[1] + mn[2] + '.  ' + mn[3].trim();
+          return ln;
+        }).join('\n');
+      }
+
+      /* Best-effort OCR cleanup — ML Kit accuracy has hard limits, so we only fix SAFE, common patterns
+         (aggressive fixes like splitting merged words "opensthe"→"opens the" need a dictionary and would
+         wrongly break real words like "breathe"/"another", so we don't guess those): */
+      function cleanOcr(raw){
+        return String(raw || '')
+          .replace(/([A-Za-z])[-‐‑]\s*\n\s*([a-z])/g, '$1$2')   // "exam-\nple" → "example"
+          .replace(/([a-z])[-‐‑]\s+([a-z])/g, '$1$2')           // "exam- ple" → "example"
+          .replace(/\b([A-Z])([A-Z])([a-z]{2,})/g, function (m, a, b, c){ return a + b.toLowerCase() + c; })  // "WOuld" → "Would"
+          .replace(/[ \t]{2,}/g, ' ');                                    // collapse stray double spaces
+      }
+
+      /* Strip page furniture out of text captured with "select all" in a browser.
+         Selecting a whole page drags in nav links, menus, cookie banners, share widgets,
+         related-article rails and footers — read aloud, that's minutes of noise before the
+         article starts. Prose survives; single-word links and boilerplate don't. */
+      var JUNK = /^(home|menu|search|share|tweet|log ?in|sign ?[ui][pn]|subscribe|newsletter|advertisement|sponsored|cookies?|accept all|privacy policy|terms|contact|about us|follow us|read more|related|trending|most popular|next article|previous|back to top|skip to (main )?content|comments?|tags?|categor(y|ies)|published|updated|share this|copy link|download app)\b/i;
+      function cleanSharedText(raw){
+        var lines = String(raw || '').split(/\r?\n/), out = [], seen = {};
+        for (var i = 0; i < lines.length; i++){
+          var l = lines[i].replace(/\s+/g, ' ').trim();
+          if (!l) { if (out.length && out[out.length - 1] !== '') out.push(''); continue; }
+          if (JUNK.test(l) && l.length < 60) continue;                 // boilerplate label
+          if (/^[|·•\-–—>«»<]+$/.test(l)) continue;                    // separator glyphs
+          if (/^\d+ (min|minute|hour)s? (read|ago)$/i.test(l)) continue;
+          if (/^(©|copyright)/i.test(l)) continue;
+          var words = l.split(' ').length;
+          var sentence = /[.!?:;,]/.test(l);
+          // short, punctuation-free fragments are nav items, not prose
+          if (words <= 3 && !sentence && l.length < 40) continue;
+          var key = l.toLowerCase();
+          if (key.length > 12 && seen[key]) continue;                  // dedupe repeated rails
+          seen[key] = 1;
+          out.push(l);
+        }
+        var txt = out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+        return txt.length >= 80 ? txt : String(raw || '').trim();      // never strip it to nothing
+      }
+
+      /* ---- result actions ---- */
+      function curTitle(){ return ($('txTitle').textContent || '').trim(); }
+      function curBody(){ return $('txText').value || ''; }
+      function curText(){ var t = curTitle(); return (t ? t + '\n\n' : '') + curBody(); }
+      $('txCopy').addEventListener('click', function (){ var t = curText(); if (K() && K().copy) K().copy(t); else { try { navigator.clipboard.writeText(t); } catch (e) {} } toast('Copied', 'ok'); });
+      $('txShare').addEventListener('click', function (){
+        var t = curText();
+        try { if (navigator.share){ navigator.share({ text: t, title: 'Scanned text' }); return; } } catch (e) {}
+        if (K() && K().copy){ K().copy(t); toast('Copied — paste it anywhere', 'ok'); }
+      });
+      $('txSave').addEventListener('click', savePdf);
+
+      /* ===== LISTEN — the reason to scan notes in the first place =====
+         Runs through the native BgTts foreground service rather than the in-page TTS plugin, so
+         playback survives leaving the app: exactly the commute/study case this feature exists for.
+         Reuses the voice + speed the user already picked in the reader. */
+      (function (){
+        var BG = (K() && K().plugin) ? K().plugin('BgTts') : null;
+        var playing = false;
+        function sentences(txt){
+          var out = [], re = /[^.!?\n]+[.!?]+["')\]’”]*|[^.!?\n]+(?=\n|$)/g, m, clean = String(txt || '').replace(/\s+/g, ' ');
+          while ((m = re.exec(clean))){ var t = (m[0] || '').trim(); if (t.length >= 2) out.push(t); }
+          if (!out.length && clean.trim().length >= 2) out.push(clean.trim());
+          return out;
+        }
+        function prefs(txt){
+          var rate = 1, pitch = 1, voiceURI = null;
+          try { rate = +localStorage.getItem('sj_tts_rate') || 1; } catch (e) {}
+          try { pitch = +localStorage.getItem('sj_tts_pitch') || 1; } catch (e) {}
+          try { voiceURI = localStorage.getItem('sj_tts_voice') || null; } catch (e) {}
+          // Devanagari → ask for a Hindi voice, same detection the reader uses
+          var lang = /[ऀ-ॿ]/.test(txt) ? 'hi-IN' : 'en-US';
+          return { rate: rate, pitch: pitch, voiceURI: voiceURI, lang: lang };
+        }
+        function setPlaying(on){
+          playing = on;
+          $('txPlay').innerHTML = on
+            ? '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.3"/><rect x="14" y="5" width="4" height="14" rx="1.3"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 8 5.5Z"/></svg>';
+          $('txPlay').setAttribute('aria-label', on ? 'Pause' : 'Play');
+        }
+        function stop(){ try { if (BG && BG.stop) BG.stop(); } catch (e) {} $('txPlayer').hidden = true; setPlaying(false); }
+
+        $('txListen').addEventListener('click', function (){
+          var txt = curText().trim();
+          if (!txt){ toast('Nothing to read yet', 'info'); return; }
+          if (!BG || !BG.start){ toast('Read-aloud isn’t available on this device', 'err'); return; }
+          /* Keep the heading as its OWN utterance — folding it into the body made the engine
+             run the title straight into the first sentence with no pause. */
+          var head = curTitle().trim();
+          var list = (head ? [head] : []).concat(sentences(curBody()));
+          if (!list.length) list = sentences(txt);
+          if (!list.length){ toast('Nothing to read yet', 'info'); return; }
+          var p = prefs(txt);
+          var title = head || 'Scanned text';
+          lastList = list;                                  // kept so voice/speed changes can re-apply
+          BG.start({ sentences: list, index: 0, rate: p.rate, pitch: p.pitch, voiceURI: p.voiceURI, lang: p.lang, title: title })
+            .then(function (){
+              $('txPlayer').hidden = false; setPlaying(true);
+              $('txPNow').textContent = list[0];
+              haptic('light');
+            })
+            .catch(function (){ toast('Could not start reading', 'err'); });
+        });
+        $('txPlay').addEventListener('click', function (){
+          if (!BG) return;
+          if (playing){ try { BG.pause(); } catch (e) {} setPlaying(false); }
+          else { try { BG.resume(); } catch (e) {} setPlaying(true); }
+        });
+        $('txPStop').addEventListener('click', stop);
+
+        /* keep the in-app player in step with the notification's own controls */
+        if (BG && BG.addListener){
+          try {
+            BG.addListener('bgTtsEvent', function (ev){
+              if (!ev) return;
+              if (ev.state === 'paused') setPlaying(false);
+              if (ev.state === 'resumed' || ev.state === 'index') setPlaying(true);
+              if (ev.state === 'done' || ev.state === 'stopped'){ $('txPlayer').hidden = true; setPlaying(false); }
+            });
+          } catch (e) {}
+        }
+        /* ---- voice / speed / pitch ----
+           Same storage keys as the reader (sj_tts_voice / _rate / _pitch), so the choice is one
+           setting across the whole app rather than a per-screen surprise. */
+        var TTSP = (K() && K().plugin) ? K().plugin('TextToSpeech') : null;
+        var lastList = null, voices = [];
+        function fmtRate(v){ return (v % 1 === 0 ? String(v) : (+v).toFixed(2).replace(/0$/, '')) + '×'; }
+        function readPref(k, d){ try { return +localStorage.getItem(k) || d; } catch (e) { return d; } }
+        function restart(){                                   // apply new settings from the current spot
+          if (!lastList || !BG || !BG.start) return;
+          var p = prefs(curText());
+          BG.start({ sentences: lastList, index: 0, rate: p.rate, pitch: p.pitch, voiceURI: p.voiceURI, lang: p.lang, title: curTitle() || 'Scanned text' })
+            .then(function (){ setPlaying(true); }).catch(function () {});
+        }
+        function renderVoices(){
+          var host = $('txVList'); if (!host) return;
+          var sel = null; try { sel = localStorage.getItem('sj_tts_voice'); } catch (e) {}
+          host.innerHTML = '';
+          if (!voices.length){ host.innerHTML = '<div class="tx-vitem" style="border:0"><small>No voices found on this device.</small></div>'; return; }
+          voices.forEach(function (v){
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'tx-vitem';
+            b.setAttribute('aria-selected', String((v.voiceURI || v.name) === sel));
+            b.innerHTML = '<span><b></b><small></small></span>';
+            b.querySelector('b').textContent = v.name || v.voiceURI || 'Voice';
+            b.querySelector('small').textContent = v.lang || '';
+            b.addEventListener('click', function (){
+              try { localStorage.setItem('sj_tts_voice', v.voiceURI || v.name); } catch (e) {}
+              renderVoices(); restart();
+            });
+            host.appendChild(b);
+          });
+        }
+        $('txVoiceBtn').addEventListener('click', function (){
+          $('txVSheet').hidden = false;
+          $('txRate').value = String(readPref('sj_tts_rate', 1)); $('txRateV').textContent = fmtRate(readPref('sj_tts_rate', 1));
+          $('txPitch').value = String(readPref('sj_tts_pitch', 1)); $('txPitchV').textContent = readPref('sj_tts_pitch', 1).toFixed(1);
+          if (TTSP && TTSP.getSupportedVoices && !voices.length){
+            TTSP.getSupportedVoices().then(function (r){ voices = (r && r.voices) || []; renderVoices(); }).catch(function (){ renderVoices(); });
+          } else renderVoices();
+        });
+        $('txVDone').addEventListener('click', function (){ $('txVSheet').hidden = true; });
+        $('txVSheet').addEventListener('click', function (e){ if (e.target === $('txVSheet')) $('txVSheet').hidden = true; });
+        $('txRate').addEventListener('input', function (){ $('txRateV').textContent = fmtRate(+this.value); });
+        $('txRate').addEventListener('change', function (){ try { localStorage.setItem('sj_tts_rate', String(+this.value)); } catch (e) {} restart(); });
+        $('txPitch').addEventListener('input', function (){ $('txPitchV').textContent = (+this.value).toFixed(1); });
+        $('txPitch').addEventListener('change', function (){ try { localStorage.setItem('sj_tts_pitch', String(+this.value)); } catch (e) {} restart(); });
+
+        /* Deliberately NOT stopped when you leave the screen or the app — that's the entire
+           point of scan-then-listen. The native service holds its own copy of the sentences and
+           shows a media notification, so playback is always visible and always stoppable. */
+      })();
+      $('txAgain2').addEventListener('click', function (){ if (DS) capture(); else { var i = $('txGal'); i.value = ''; i.click(); } });
+      $('txClose').addEventListener('click', leave);
+
+      async function savePdf(){
+        var title = curTitle(), body = curBody();
+        if (!title.trim() && !body.trim()){ toast('Nothing to save', 'info'); return; }
+        busy('Building PDF…');
+        try {
+          var pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica), bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+          var W = 595, H = 842, M = 56, size = 12, lh = 17, maxW = W - M * 2;
+          var page = pdf.addPage([W, H]), y = H - M;
+          function wrapW(str, w){ var words = String(str).split(/\s+/), cur = '', rows = [];
+            for (var i = 0; i < words.length; i++){ var t = cur ? cur + ' ' + words[i] : words[i];
+              if (font.widthOfTextAtSize(t, size) > w && cur){ rows.push(cur); cur = words[i]; } else cur = t; }
+            if (cur) rows.push(cur); return rows.length ? rows : ['']; }
+          // Helvetica/WinAnsi can't draw smart quotes/dashes/ellipsis OCR often produces → normalize them,
+          // and guard each draw so one unsupported glyph can't abort the whole save.
+          function winSafe(s){ return String(s).replace(/[‘’‛]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-').replace(/…/g, '...').replace(/ /g, ' '); }
+          function drawRow(txt, x){ if (y < M){ page = pdf.addPage([W, H]); y = H - M; } try { page.drawText(winSafe(txt), { x: x, y: y - size, size: size, font: font, color: rgb(0.1, 0.1, 0.12) }); } catch (e) {} y -= lh; }
+          // TITLE as a heading (bold, larger) above the body
+          if (title.trim()){
+            var tsz = 20;
+            (function (){ var words = String(title).split(/\s+/), cur = '', rows = [];
+              for (var i = 0; i < words.length; i++){ var t = cur ? cur + ' ' + words[i] : words[i]; if (bold.widthOfTextAtSize(t, tsz) > maxW && cur){ rows.push(cur); cur = words[i]; } else cur = t; }
+              if (cur) rows.push(cur);
+              rows.forEach(function (row){ if (y < M){ page = pdf.addPage([W, H]); y = H - M; } try { page.drawText(winSafe(row), { x: M, y: y - tsz, size: tsz, font: bold, color: rgb(0.1, 0.1, 0.12) }); } catch (e) {} y -= Math.round(tsz * 1.35); });
+            })();
+            y -= 8;
+          }
+          body.split(/\n/).forEach(function (line){
+            var lm = line.match(/^(\s*)(•\s+|\d{1,3}\.\s+|[A-Za-z]\.\s+)([\s\S]*)$/);   // bullet / numbered / lettered list item
+            if (lm){
+              var marker = lm[2], hang = font.widthOfTextAtSize(marker, size);
+              wrapW(lm[3], maxW - hang).forEach(function (row, ri){ drawRow(ri === 0 ? marker + row : row, ri === 0 ? M : M + hang); });   // hanging indent
+            } else {
+              wrapW(line, maxW).forEach(function (row){ drawRow(row, M); });
+            }
+          });
+          var out = await pdf.save(), blob = new Blob([out], { type: 'application/pdf' });
+          var base = (title.trim() ? title.trim().slice(0, 50) : 'Scanned text').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+          var nm = base + ' ' + new Date().toISOString().slice(0, 10) + '.pdf';
+          var id = null;
+          if (window.SJRecents){
+            // timeout-guard the IndexedDB save so a blocked DB can never freeze "Building PDF…"
+            try { id = await Promise.race([ window.SJRecents.add({ name: nm, kind: 'pdf', blob: blob }), new Promise(function (r){ setTimeout(function (){ r(null); }, 5000); }) ]); } catch (e2){ id = null; }
+          }
+          if (id){ leave(true); location.href = '/tools/pdf-studio.html?recent=' + id; return; }
+          if (K() && K().saveDownload) K().saveDownload(blob, nm);   // fallback: save to device + Recent unavailable
+          toast('Saved to Files', 'ok'); leave();
+        } catch (e){ toast('Could not build the PDF — please try again', 'err'); show('txResult'); }   // no raw exception text (could render "[object Object]")
+      }
+
+      function show(id){ ['txLoad', 'txResult'].forEach(function (s){ $(s).hidden = s !== id; }); }
+      function leave(noNav){ document.body.classList.remove('tx-on'); if (noNav !== true) location.href = '/'; }
+      try { var App = plugin('App'); if (App && App.addListener) App.addListener('backButton', function (){ if (!document.body.classList.contains('tx-on')) return; if (!$('txResult').hidden){ showLand(); return; } leave(); }); } catch (e) {}
+      boot();
+    })();
+  </script>
+</Base>

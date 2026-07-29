@@ -1,0 +1,166 @@
+---
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import HowTo from '../../components/HowTo.astro';
+import AppLd from '../../components/AppLd.astro';
+const title = 'Compress PDF — Reduce PDF File Size Online (Free, Private)';
+const description = 'Free PDF compressor. Shrink a PDF in your browser by re-rendering pages as JPEG images at a quality you choose. Best for scans and image-heavy PDFs. Nothing is uploaded.';
+const faqItems = [
+  { q: 'How does this PDF compressor work?', a: 'It renders every page of your PDF to an image with pdf.js, re-encodes each page as a JPEG at the quality and scale you pick, then rebuilds a brand-new PDF from those images with pdf-lib. You see the original size versus the new size before you download.' },
+  { q: 'Does the text stay selectable after compressing?', a: 'No. Because each page is flattened to an image, text, links and form fields become part of a picture and are no longer selectable or searchable. If you need selectable text, keep the original PDF.' },
+  { q: 'What kind of PDFs shrink the most?', a: 'Scanned documents and image-heavy PDFs shrink the most, because their large embedded photos get re-encoded at a lower JPEG quality. Text-only or vector PDFs may not shrink at all — flattening them to images can even make them larger, so the tool warns you if the result is bigger.' },
+  { q: 'Is my PDF uploaded or stored anywhere?', a: 'No. The whole process runs locally in your browser using JavaScript. Your PDF is never uploaded, stored or shared — it stays on your device the entire time.' },
+  { q: 'What do the quality and scale settings do?', a: 'Quality sets the JPEG compression level for each page — lower quality means smaller files with more visible artifacts. Scale controls the rendering resolution; a lower scale produces fewer pixels per page and a smaller file, at the cost of sharpness.' },
+];
+const howSteps = [
+  { name: 'Add your PDF', text: 'Drop a PDF onto the box or click browse to choose one from your device.' },
+  { name: 'Choose quality and scale', text: 'Drag the Quality and Scale sliders to balance file size against sharpness — lower values make smaller files.' },
+  { name: 'Compress and compare', text: 'Click Compress PDF to rebuild the document and compare the original size with the new size.' },
+  { name: 'Download the result', text: 'If the new size is smaller, click Download to save the compressed PDF to your device.' },
+];
+---
+<Base title={title} description={description}>
+  <header class="head"><div class="wrap">
+    <p class="kicker">PDF Tool</p><h1>Compress PDF</h1>
+    <p>Drop in a PDF and re-render its pages as JPEGs at a quality you choose to shrink the file — right here in your browser.</p>
+  </div></header>
+  <div class="wrap"><div class="tool wm">
+    <div id="drop" class="drop"><input id="file" type="file" accept="application/pdf,.pdf" hidden />
+      <div class="drop-ic">🗜️</div><p class="drop-t">Drop a PDF, or <button id="browse" type="button" class="linklike">browse</button></p>
+      <p class="drop-s">Best for scans &amp; image-heavy PDFs · pages flatten to images · 🔒 nothing leaves your device</p></div>
+    <div id="editor" hidden>
+      <div class="wm-controls">
+        <label class="ctl">Quality <span class="cv" id="qV">70%</span>
+          <input id="q" type="range" min="20" max="95" step="5" value="70" /></label>
+        <label class="ctl">Scale (resolution) <span class="cv" id="sV">1.5x</span>
+          <input id="s" type="range" min="1" max="3" step="0.5" value="1.5" /></label>
+        <div class="sizes">
+          <span>Original: <b id="oSize">—</b></span>
+          <span>New: <b id="nSize" class="hl">—</b></span>
+          <span id="saved" class="hl"></span>
+        </div>
+        <p class="note">Heads up: each page is converted to an image, so text becomes non-selectable. This works best for scanned or image-heavy PDFs; text-only PDFs may not shrink (and can grow larger).</p>
+        <div class="wm-actions">
+          <button id="make" type="button" class="wm-btn">🗜️ Compress PDF</button>
+          <button id="dl" type="button" class="wm-btn" hidden>⬇ Download</button>
+          <button id="reset" type="button" class="wm-btn ghost">New PDF</button>
+        </div>
+        <p id="status" class="status"></p>
+      </div>
+    </div>
+  </div></div>
+  <div class="ad">Advertisement</div>
+  <div class="content">
+    <h2>How this PDF compressor works</h2>
+    <p>This tool takes a best-effort, image-based approach: every page is rendered to a canvas with <b>pdf.js</b>, re-encoded as a JPEG at the <b>quality</b> and <b>scale</b> you choose, and a fresh PDF is rebuilt from those page images with <b>pdf-lib</b>. You always see the original size next to the new size before downloading.</p>
+    <p><b>Be aware of the trade-off.</b> Because pages are flattened to images, text, links and form fields are no longer selectable or searchable. It shines on <b>scanned documents and image-heavy PDFs</b>, where re-encoding large photos at lower quality saves a lot. For <b>text-only or vector PDFs</b>, flattening can fail to shrink — or even enlarge — the file, so the tool tells you when the result is bigger and lets you keep your original.</p>
+    <p><b>Your PDF never leaves your device</b> — all rendering and rebuilding happen entirely in your browser.</p>
+    <div class="xlinks"><a href="/tools/pdf-to-jpg">PDF to JPG →</a><a href="/tools/jpg-to-pdf">JPG to PDF →</a></div>
+  </div>
+  <style>
+    .drop{border:2px dashed var(--line);border-radius:14px;background:var(--surface2);padding:40px 20px;text-align:center;cursor:pointer}
+    .drop.drag{border-color:var(--brand)}.drop-ic{font-size:40px;margin-bottom:8px}.drop-t{font-size:16px;font-weight:600}.drop-s{font-size:13px;color:var(--dim);margin-top:6px}
+    .linklike{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+    .wm{padding:20px}.wm-controls{display:flex;flex-direction:column;gap:14px;max-width:460px;margin:0 auto}
+    .ctl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--dim)}
+    .cv{float:right;color:var(--brand);font-weight:700}
+    .sizes{display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:var(--dim);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px}
+    .sizes .hl{color:var(--brand);font-weight:700}
+    .note{font-size:12.5px;line-height:1.5;color:var(--dim);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin:0}
+    .wm-actions{display:flex;gap:10px;flex-wrap:wrap}.wm-btn{flex:1;min-width:120px;padding:12px;border-radius:10px;font-weight:700;color:#fff;border:0;cursor:pointer;background:linear-gradient(135deg,var(--brand2),var(--brand))}
+    .wm-btn.ghost{background:var(--surface2);color:var(--dim);border:1px solid var(--line);flex:0 0 auto;min-width:0}
+    .status{margin:0;font-size:13px;color:var(--dim)}
+  </style>
+  <HowTo task="compress a PDF" steps={howSteps} />
+  <AppLd name="Compress PDF" description="Drop or browse to a PDF and this tool re-renders each page as a JPEG at a quality and scale you choose, rebuilds a new PDF, and shows the original size next to the new size before you download." category="BusinessApplication" features={["Drag-and-drop or browse to load a PDF", "Adjustable JPEG quality and render scale", "Rebuilds a new image-based PDF with pdf-lib", "Live original vs new file-size comparison", "Runs fully client-side — no uploads"]} />
+  <Faq items={faqItems} />
+  <script>
+    import * as pdfjsLib from 'pdfjs-dist';
+    import * as PDFLib from 'pdf-lib';
+    import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    (function(){
+      var pdfBuf=null, srcName='document', origSize=0, lastBytes=null;
+      function $(i){return document.getElementById(i);}
+      function fmtSize(b){return b>1048576?(b/1048576).toFixed(2)+' MB':Math.round(b/1024)+' KB';}
+      function libsReady(){return typeof pdfjsLib!=='undefined' && typeof PDFLib!=='undefined';}
+      function load(f){
+        try{
+          srcName=f.name.replace(/\.[^.]+$/,''); origSize=f.size;
+          $('oSize').textContent=fmtSize(f.size);
+          $('nSize').textContent='—'; $('saved').textContent=''; $('dl').hidden=true; lastBytes=null;
+          f.arrayBuffer().then(function(buf){ pdfBuf=buf; $('drop').hidden=true; $('editor').hidden=false; $('status').textContent=''; }).catch(function(){ $('status').textContent='Could not read this file — it may be corrupt or password-protected.'; });
+        }catch(err){ $('status').textContent='Could not read this file — it may be corrupt or password-protected.'; }
+      }
+      async function compress(){
+        if(!pdfBuf){return;}
+        if(!libsReady()){ $('status').textContent='PDF engine still loading — please try again in a second.'; return; }
+        $('status').textContent='Rendering pages…'; $('dl').hidden=true; lastBytes=null;
+        var q=parseInt($('q').value,10)/100;
+        var scale=parseFloat($('s').value);
+        try{
+          var task=pdfjsLib.getDocument({data:pdfBuf.slice(0),isEvalSupported:false});   // CVE-2024-4367: never eval glyph programs from an untrusted PDF
+          var pdf=await task.promise;
+          var out=await PDFLib.PDFDocument.create();
+          var _np=pdf.numPages, _cap=Math.min(_np,150);
+          if(_np>150 && window.SnapJarKit) window.SnapJarKit.toast('Large PDF — compressing the first 150 of '+_np+' pages','info',4500);
+          for(var n=1;n<=_cap;n++){
+            $('status').textContent='Compressing page '+n+' of '+_cap+'…';
+            var page=await pdf.getPage(n);
+            var vp=page.getViewport({scale:scale});
+            var fit=window.SnapJarKit.fitDims(vp.width,vp.height);
+            if(fit.clamped){ vp=page.getViewport({scale:scale*fit.scale}); }
+            var c=document.createElement('canvas');
+            c.width=Math.max(1,Math.round(vp.width));
+            c.height=Math.max(1,Math.round(vp.height));
+            var ctx=c.getContext('2d');
+            ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+            await page.render({canvasContext:ctx,viewport:vp}).promise;
+            var blob=await new Promise(function(res){c.toBlob(res,'image/jpeg',q);});
+            if(!blob){ throw new Error('Could not encode this page'); }
+            var bytes=new Uint8Array(await blob.arrayBuffer());
+            var jpg=await out.embedJpg(bytes);
+            var pg=out.addPage([c.width,c.height]);
+            pg.drawImage(jpg,{x:0,y:0,width:c.width,height:c.height});
+            await window.SnapJarKit.breathe();
+          }
+          var saved=await out.save();
+          lastBytes=saved;
+          var newSize=saved.byteLength;
+          $('nSize').textContent=fmtSize(newSize);
+          if(newSize<origSize){
+            var pct=Math.round((1-newSize/origSize)*100);
+            $('saved').textContent='▼ '+pct+'% smaller';
+            $('status').textContent='Done — your compressed PDF is ready to download.';
+          }else{
+            var grew=Math.round((newSize/origSize-1)*100);
+            $('saved').textContent='⚠ '+grew+'% larger — this PDF is likely text-based; keep your original.';
+            $('status').textContent='Compressing did not shrink this PDF. You can still download it, but the original is smaller.';
+          }
+          $('dl').hidden=false;
+        }catch(err){
+          /* never surface raw pdf-lib/pdf.js exception text to the user — it's meaningless to them
+             and can leak internals. Plain, actionable language instead. */
+          $('status').textContent='Could not compress this PDF. It may be damaged or password-protected — try another file.';
+        }
+      }
+      function download(){
+        if(!lastBytes){return;}
+        var blob=new Blob([lastBytes],{type:'application/pdf'});
+        var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=srcName+'-compressed.pdf'; a.click();
+        setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+      }
+      $('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+      $('drop').onclick=function(e){if(e.target.id==='drop'||e.target.className.indexOf('drop-')===0)$('file').click();};
+      $('file').onchange=function(e){if(e.target.files[0])load(e.target.files[0]);};
+      ['dragover','dragenter'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.add('drag');});});
+      ['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){e.preventDefault();$('drop').classList.remove('drag');});});
+      $('drop').addEventListener('drop',function(e){if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+      $('q').addEventListener('input',function(){$('qV').textContent=$('q').value+'%';});
+      $('s').addEventListener('input',function(){$('sV').textContent=$('s').value+'x';});
+      $('make').onclick=window.SnapJarKit.guard('make',compress);
+      $('dl').onclick=window.SnapJarKit.guard('dl',download);
+      $('reset').onclick=function(){pdfBuf=null;lastBytes=null;$('file').value='';$('status').textContent='';$('nSize').textContent='—';$('saved').textContent='';$('dl').hidden=true;$('editor').hidden=true;$('drop').hidden=false;};
+    })();
+  </script>
+</Base>
