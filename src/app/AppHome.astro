@@ -1,17 +1,9 @@
 ---
-/* SnapJar APP home (app build only). Premium CRED-style: search + Popular row +
-   category grids of real 3D icons (Microsoft Fluent, bundled in /assets/icons),
-   with multiple ad slots. Tools link to the SHARED tool pages. */
-const popular = [
-  { ic: 'open_book',       l: 'PDF Reader',  h: '/tools/pdf-studio?open=1' },
-  { ic: 'memo',            l: 'Write / Note',h: '/tools/pdf-studio?new=1' },
-  { ic: 'camera',          l: 'Scan',        h: '/tools/scanner' },
-  { ic: 'musical_note',    l: 'Listen',      h: '/tools/pdf-studio?open=1' },
-  { ic: 'bookmark_tabs',   l: 'Merge PDF',   h: '/tools/pdf-tools' },
-  { ic: 'clamp',           l: 'Compress PDF',h: '/tools/compress-pdf' },
-  { ic: 'framed_picture',  l: 'JPG → PDF',   h: '/tools/jpg-to-pdf' },
-  { ic: 'page_facing_up',  l: 'PDF → JPG',   h: '/tools/pdf-to-jpg' },
-];
+/* SnapJar APP home — premium "lux" home: deep-blue gradient + living fluid backdrop,
+   a time-based greeting, and a glass folder-cluster of the user's REAL recent documents
+   (built client-side from SJRecents). Bottom nav (Base) stays; no chat composer.
+   All home CSS is is:global (namespaced under .lux) because the folder cluster is built
+   in JS — Astro's scoped styles never reach createElement() nodes. */
 const sections = [
   { id: 'scan-read', h: 'Scan & Read', items: [
     { ic: 'camera',                        l: 'Scan Doc',   h: '/tools/scanner' },
@@ -40,69 +32,294 @@ const sections = [
     { ic: 'memo',                          l: 'PDF → Word', h: '/tools/pdf-to-word' },
   ]},
 ];
-const adAfter = { 0: true, 2: true }; // ad slots after Scan&Read and after Create&Convert (plus one after Popular)
+const actions = [
+  { k: 'open',   l: 'Open PDF', h: '/tools/pdf-studio.html?open=1' },
+  { k: 'scan',   l: 'Scan',     h: '/tools/scanner.html' },
+  { k: 'listen', l: 'Listen',   h: '/tools/pdf-studio.html?open=1&listen=1' },
+  { k: 'write',  l: 'Write',    h: '/tools/pdf-studio.html?new=1' },
+];
 ---
-<div class="apphome">
-  <header class="apphero">
-    <h1>Your tools, all private</h1>
-    <p class="apphero-sub">No signup · No payment · 100% free</p>
-    <div class="apphero-row">
-      <span class="app-priv">🔒 100% on-device</span>
-      <button class="app-info" id="appInfo" type="button" aria-label="Why is SnapJar free?">i</button>
-    </div>
-  </header>
+<div class="lux">
+  <div class="lux-bg" aria-hidden="true">
+    <div class="lux-grad"></div>
+    <div class="lux-fluid"><b class="g1"></b><b class="g2"></b><b class="g3"></b><b class="g4"></b></div>
+    <div class="lux-glow"></div>
+  </div>
 
-  <section class="app-sec">
-    <div class="app-sec-h" role="heading" aria-level="2">Popular</div>
-    <div class="app-grid">
-      {popular.map((t) => (
-        <a class="atile" href={t.h} data-l={t.l.toLowerCase()}><span class="atile-ic"><img src={`/assets/icons/${t.ic}.png`} alt="" loading="lazy" /></span><span class="atile-l">{t.l}</span></a>
+  <div class="lux-scroll">
+    <header class="lux-top">
+      <h1 class="lux-hi" id="luxGreet">Good morning <span class="emo">☀️</span></h1>
+      <button class="lux-info" id="luxInfo" type="button" aria-label="Why is SnapJar free?">i</button>
+    </header>
+
+    <!-- REAL recent documents, built client-side as a glass folder cluster -->
+    <section class="lux-recent" aria-label="Your recent documents">
+      <div class="lux-cluster" id="luxCluster"><div class="lux-skel"></div></div>
+    </section>
+
+    <!-- quick actions (composer replaced by these, per app nav) -->
+    <div class="lux-actions">
+      {actions.map((a) => (
+        <a class="lux-act" data-k={a.k} href={a.h}>
+          <span class="lux-act-ic" set:html={ ({
+            open:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h3.4a2 2 0 0 1 1.6.8l.9 1.2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>',
+            scan:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><rect x="8" y="8" width="8" height="8" rx="1.5"/></svg>',
+            listen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="13.5" width="4.5" height="7" rx="1.6"/><rect x="17" y="13.5" width="4.5" height="7" rx="1.6"/></svg>',
+            write:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+          })[a.k] } />
+          <span class="lux-act-l">{a.l}</span>
+        </a>
       ))}
     </div>
-  </section>
 
-  <div class="app-ad"></div>
+    <div class="app-ad lux-ad"></div>
 
-  {sections.map((s, idx) => (
-    <Fragment>
-      <section class="app-sec" id={s.id}>
-        <div class="app-sec-h" role="heading" aria-level="2">{s.h}</div>
-        <div class="app-grid">
+    {sections.map((s) => (
+      <section class="lux-sec" id={s.id}>
+        <div class="lux-sec-h">{s.h}</div>
+        <div class="lux-grid">
           {s.items.map((t) => (
-            <a class="atile" href={t.h} data-l={t.l.toLowerCase()}><span class="atile-ic"><img src={`/assets/icons/${t.ic}.png`} alt="" loading="lazy" /></span><span class="atile-l">{t.l}</span></a>
+            <a class="lux-tile" href={t.h} data-l={t.l.toLowerCase()}>
+              <span class="lux-tile-ic"><img src={`/assets/icons/${t.ic}.png`} alt="" loading="lazy" /></span>
+              <span class="lux-tile-l">{t.l}</span>
+            </a>
           ))}
         </div>
       </section>
-      {adAfter[idx] && <div class="app-ad"></div>}
-    </Fragment>
-  ))}
+    ))}
 
-  <a class="app-settings" href="/settings" aria-label="Settings">
-    <span class="as-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
-    <span class="as-tx"><b>Settings</b><small>Help, feedback, privacy &amp; licenses</small></span>
-    <span class="as-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
-  </a>
-</div>
-
-<!-- Why-free info sheet -->
-<div class="app-modal" id="appWhy" hidden>
-  <div class="app-modal-card" role="dialog" aria-modal="true" aria-label="Why SnapJar is free">
-    <div class="amc-ic">💜</div>
-    <h3>Free, forever — here's how</h3>
-    <p>SnapJar has <b>no signup</b> and <b>no payment</b>. We show clearly-labeled ads to make sure the app stays <b>completely free for you, forever</b>.</p>
-    <p>Your files never leave your device — <b>ads never see your documents</b>.</p>
-    <div class="amc-links"><a href="/privacy-policy">Privacy Policy</a><span>·</span><a href="/licenses">Open-source licenses</a></div>
-    <button class="amc-close" id="appWhyClose" type="button">Got it</button>
+    <a class="lux-settings" href="/settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      <span>Settings · Help · Privacy</span>
+    </a>
   </div>
 </div>
 
+<!-- why-free info sheet -->
+<div class="lux-modal" id="luxWhy" hidden>
+  <div class="lux-modal-card" role="dialog" aria-modal="true" aria-label="Why SnapJar is free">
+    <div class="lux-modal-ic">💜</div>
+    <h3>Free, forever — here's how</h3>
+    <p>SnapJar has <b>no signup</b> and <b>no payment</b>. Clearly-labelled ads keep it free for you. Your files never leave your device — <b>ads never see your documents</b>.</p>
+    <div class="lux-modal-links"><a href="/privacy-policy">Privacy Policy</a><span>·</span><a href="/licenses">Open-source licenses</a></div>
+    <button class="lux-modal-close" id="luxWhyClose" type="button">Got it</button>
+  </div>
+</div>
+
+<style is:global>
+/* ===================== LUX HOME (app only) ===================== */
+:root{ --lux-a:#9b5cff; --lux-b:#5d6bff; --lux-c:#2f7cff; }
+
+/* immersive: let the deep gradient own the whole screen; the app header floats over it */
+body.is-app.lux-home{ background:#02030a; }
+body.is-app.lux-home nav:not(.appbar){ background:transparent !important; border-bottom:0 !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+body.is-app.lux-home nav:not(.appbar) .brand{ color:#fff; }
+body.is-app.lux-home nav:not(.appbar) .theme-btn{ color:#fff; }
+body.is-app.lux-home::before{ background:#02030a !important; }   /* status-bar cover → dark on home */
+body.is-app.lux-home .wrap{ padding:0 !important; }
+
+.lux{ position:relative; min-height:100%; color:#fff; }
+.lux-bg{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.lux-grad{ position:absolute; inset:0; background:linear-gradient(180deg,#2a5cf3 0%,#1e46c8 16%,#163292 31%,#0b1b57 46%,#040b24 60%,#01030c 74%,#000 100%); }
+.lux-glow{ position:absolute; inset:0; background:radial-gradient(115% 50% at 50% -6%, rgba(96,146,255,.5), transparent 66%); }
+.lux-fluid{ position:absolute; inset:-20%; }
+.lux-fluid b{ position:absolute; display:block; border-radius:50%; mix-blend-mode:screen; will-change:transform; }
+.lux-fluid .g1{ left:-8%; top:2%;  width:62%; height:30%; background:radial-gradient(closest-side,rgba(126,150,255,.5),transparent 72%);  animation:luxTideA 27s ease-in-out infinite; }
+.lux-fluid .g2{ right:-10%; top:20%; width:66%; height:32%; background:radial-gradient(closest-side,rgba(72,132,255,.42),transparent 74%); animation:luxTideB 33s ease-in-out infinite; }
+.lux-fluid .g3{ left:4%; top:46%;  width:74%; height:34%; background:radial-gradient(closest-side,rgba(110,80,225,.32),transparent 76%); animation:luxTideC 39s ease-in-out infinite; }
+.lux-fluid .g4{ right:-6%; bottom:8%; width:62%; height:28%; background:radial-gradient(closest-side,rgba(150,80,200,.2),transparent 76%);  animation:luxTideB 43s ease-in-out infinite reverse; }
+@keyframes luxTideA{0%,100%{transform:translate3d(0,0,0) scale(1)}32%{transform:translate3d(13%,9%,0) scale(1.14)}66%{transform:translate3d(-8%,15%,0) scale(.92)}}
+@keyframes luxTideB{0%,100%{transform:translate3d(0,0,0) scale(1.03)}36%{transform:translate3d(-13%,-8%,0) scale(.91)}72%{transform:translate3d(10%,11%,0) scale(1.16)}}
+@keyframes luxTideC{0%,100%{transform:translate3d(0,0,0) scale(.97)}42%{transform:translate3d(11%,-11%,0) scale(1.18)}76%{transform:translate3d(-12%,5%,0) scale(1.01)}}
+
+.lux-scroll{ position:relative; z-index:1; padding:8px 22px 24px; }
+.lux-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding-top:8px; }
+.lux-hi{ margin:14px 0 0; font-size:40px; line-height:1.02; font-weight:600; letter-spacing:-.035em;
+  background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.5)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.lux-hi .emo{ -webkit-text-fill-color:initial; color:initial; font-size:.8em; }
+.lux-info{ margin-top:20px; width:34px; height:34px; flex:0 0 auto; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); color:#fff; font-weight:700; font-style:italic; cursor:pointer; }
+.lux-info:active{ transform:scale(.94); }
+
+/* recent-document glass cluster (folders built in JS) */
+.lux-recent{ margin-top:26px; }
+.lux-cluster{ position:relative; height:300px; }
+.lux-skel{ position:absolute; left:2px; top:24px; width:236px; height:200px; border-radius:22px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); }
+
+.lux-fldr{ position:absolute; border:0; padding:0; background:none; cursor:pointer; transform:rotate(var(--rot,0deg)); animation:luxDrop .8s cubic-bezier(.2,.9,.25,1) both; animation-delay:var(--in,0ms); }
+.lux-fldr:active{ transform:rotate(var(--rot,0deg)) scale(.972); }
+@keyframes luxDrop{ from{opacity:0;transform:rotate(var(--rot,0deg)) translateY(34px) scale(.9)} to{opacity:1;transform:rotate(var(--rot,0deg)) scale(1)} }
+.lux-fldr > .lay{ position:absolute; inset:0; pointer-events:none; }
+.lux-fldr .mask{ -webkit-mask-image:var(--m); mask-image:var(--m); -webkit-mask-size:100% 100%; mask-size:100% 100%; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; }
+.lux-fldr .l-shadow{ background:#000; opacity:.5; transform:translateY(13px) scale(.965); filter:blur(15px); }
+.lux-fldr .l-contact{ background:#000; opacity:.42; transform:translateY(4px) scale(.99); filter:blur(4px); }
+.lux-fldr .l-glass{ -webkit-backdrop-filter:blur(24px) saturate(1.3); backdrop-filter:blur(24px) saturate(1.3); }
+.lux-fldr .l-face{ background:linear-gradient(168deg,rgba(255,255,255,.185),rgba(255,255,255,.115) 3px,rgba(255,255,255,.07) 34%,rgba(255,255,255,.04) 66%,rgba(255,255,255,.022)),linear-gradient(180deg,transparent 52%,rgba(0,0,0,.2)); }
+.lux-fldr .l-media{ top:22px; overflow:hidden; }
+.lux-fldr .l-media img,.lux-fldr .l-media .ph{ width:100%; height:100%; display:block; object-fit:cover; }
+.lux-fldr .l-rim{ position:absolute; inset:0; }
+.lux-fldr .l-rim svg{ width:100%; height:100%; display:block; }
+.lux-fldr .body{ position:absolute; inset:0; z-index:3; padding:30px 16px 14px; display:flex; flex-direction:column; text-align:left; color:#fff; }
+.lux-fldr .fn{ margin-top:auto; font-size:15px; font-weight:650; letter-spacing:-.01em; line-height:1.25; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; text-shadow:0 1px 6px rgba(0,0,0,.4); }
+.lux-fldr .fd{ margin-top:4px; font-size:12px; font-weight:500; color:rgba(255,255,255,.72); }
+.ph-a{ background:radial-gradient(58% 42% at 56% 34%,rgba(178,220,255,.95),transparent 62%),linear-gradient(158deg,#0d1f47,#03081a); }
+.ph-b{ background:radial-gradient(72% 62% at 42% 34%,#ffa4cd,transparent 66%),linear-gradient(150deg,#8d2f6e,#2b0f2b); }
+.ph-c{ background:radial-gradient(72% 62% at 58% 40%,#ffc083,transparent 66%),linear-gradient(150deg,#b8552a,#2c1207); }
+
+/* empty state (no recents yet) */
+.lux-empty{ position:relative; margin:6px 2px 0; padding:26px 22px; border-radius:24px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); box-shadow:inset 0 1px 0 rgba(255,255,255,.18); text-align:center; }
+.lux-empty h4{ margin:6px 0 4px; font-size:18px; font-weight:700; }
+.lux-empty p{ margin:0 0 16px; font-size:13.5px; color:rgba(255,255,255,.68); }
+.lux-empty a{ display:inline-block; padding:12px 22px; border-radius:26px; font-weight:700; font-size:14.5px; color:#fff; text-decoration:none; background:linear-gradient(135deg,var(--lux-a),var(--lux-b) 48%,var(--lux-c)); box-shadow:0 12px 30px -12px rgba(93,107,255,.7); }
+.lux-empty a:active{ transform:scale(.97); }
+
+/* quick actions */
+.lux-actions{ display:flex; gap:10px; margin-top:14px; }
+.lux-act{ flex:1 1 0; display:flex; flex-direction:column; align-items:center; gap:7px; padding:14px 6px; border-radius:18px; text-decoration:none; color:#fff;
+  border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.07); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:inset 0 1px 0 rgba(255,255,255,.16); transition:transform .18s ease,background .18s ease; }
+.lux-act:active{ transform:scale(.96); }
+.lux-act-ic{ width:26px; height:26px; }
+.lux-act-ic svg{ width:26px; height:26px; }
+.lux-act-l{ font-size:12px; font-weight:650; letter-spacing:.01em; }
+
+.lux-ad{ margin:22px 0 4px; }
+body.is-app.lux-home .lux-ad{ display:none; }   /* app ads are the native AdMob banner, not this box */
+
+/* tool tiles on the dark canvas */
+.lux-sec{ margin-top:24px; }
+.lux-sec-h{ font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:rgba(255,255,255,.55); margin:0 2px 12px; }
+.lux-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.lux-tile{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:14px 4px; border-radius:18px; text-decoration:none; color:#fff;
+  border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.06); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); box-shadow:inset 0 1px 0 rgba(255,255,255,.12); transition:transform .16s ease,background .16s ease; }
+.lux-tile:active{ transform:scale(.95); }
+.lux-tile-ic{ width:40px; height:40px; display:grid; place-items:center; }
+.lux-tile-ic img{ width:38px; height:38px; object-fit:contain; }
+.lux-tile-l{ font-size:11px; font-weight:600; text-align:center; color:rgba(255,255,255,.86); line-height:1.15; }
+
+.lux-settings{ display:flex; align-items:center; gap:10px; margin-top:26px; padding:15px 18px; border-radius:18px; text-decoration:none; color:rgba(255,255,255,.82);
+  border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.05); font-size:14px; font-weight:600; }
+.lux-settings svg{ width:20px; height:20px; }
+.lux-settings:active{ transform:scale(.99); }
+
+/* why-free modal */
+.lux-modal{ position:fixed; inset:0; z-index:200; display:flex; align-items:flex-end; justify-content:center; background:rgba(4,6,18,.6); }
+.lux-modal[hidden]{ display:none; }
+.lux-modal-card{ width:100%; max-width:460px; margin:0 14px; margin-bottom:calc(14px + env(safe-area-inset-bottom)); padding:24px 22px; border-radius:26px; text-align:center; color:#fff;
+  background:rgba(22,26,52,.86); border:1px solid rgba(255,255,255,.14); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px); box-shadow:0 24px 70px -20px rgba(0,0,0,.7); animation:app-rise .3s cubic-bezier(.22,1,.36,1) both; }
+.lux-modal-ic{ font-size:34px; }
+.lux-modal-card h3{ margin:6px 0 8px; font-size:19px; font-weight:800; }
+.lux-modal-card p{ margin:0 0 14px; font-size:14px; line-height:1.5; color:rgba(255,255,255,.8); }
+.lux-modal-links{ display:flex; gap:8px; justify-content:center; align-items:center; font-size:13px; margin-bottom:16px; }
+.lux-modal-links a{ color:#9db4ff; }
+.lux-modal-close{ width:100%; padding:14px; border:0; border-radius:16px; font-weight:700; font-size:15px; color:#fff; cursor:pointer; background:linear-gradient(135deg,var(--lux-a),var(--lux-b) 48%,var(--lux-c)); }
+.lux-modal-close:active{ transform:scale(.98); }
+
+@media (prefers-reduced-motion:reduce){ .lux-fluid b,.lux-fldr{ animation:none !important; } }
+@media (max-width:360px){ .lux-hi{ font-size:34px; } .lux-grid{ grid-template-columns:repeat(3,1fr); } }
+</style>
+
 <script is:inline>
   (function () {
-    var modal = document.getElementById('appWhy'), btn = document.getElementById('appInfo'), close = document.getElementById('appWhyClose');
-    function shut(){ if (modal) modal.hidden = true; if (btn) try { btn.focus(); } catch (e) {} }
-    if (btn) btn.addEventListener('click', function () { if (modal){ modal.hidden = false; try { close.focus(); } catch (e) {} } });
-    if (close) close.addEventListener('click', shut);
-    if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) shut(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal && !modal.hidden) shut(); });
+    /* time-based greeting */
+    try {
+      var h = new Date().getHours();
+      var g = h < 12 ? ['Good morning','☀️'] : h < 17 ? ['Good afternoon','⛅'] : h < 21 ? ['Good evening','🌇'] : ['Good night','🌙'];
+      var el = document.getElementById('luxGreet');
+      if (el) el.innerHTML = g[0] + ' <span class="emo">' + g[1] + '</span>';
+    } catch (e) {}
+
+    /* why-free modal */
+    var modal = document.getElementById('luxWhy'), info = document.getElementById('luxInfo'), close = document.getElementById('luxWhyClose');
+    if (info) info.addEventListener('click', function () { if (modal) modal.hidden = false; });
+    if (close) close.addEventListener('click', function () { if (modal) modal.hidden = true; });
+    if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) modal.hidden = true; });
+
+    /* ---- folder geometry (ported): one path builder, constant 22px tab rise ---- */
+    function folderPath(w, h, r, tabW){
+      return 'M'+r+',0H'+(tabW-12)+'c6.5,0 9,3.2 11,7.4l3.6,7.6c2,4.2 5.5,7 12,7H'+(w-r)+
+             'a'+r+','+r+' 0 0 1 '+r+','+r+'V'+(h-r)+'a'+r+','+r+' 0 0 1 -'+r+','+r+'H'+r+
+             'a'+r+','+r+' 0 0 1 -'+r+',-'+r+'V'+r+'a'+r+','+r+' 0 0 1 '+r+',-'+r+'Z';
+    }
+    function maskFor(w, h, d){
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'"><path d="'+d+'" fill="#fff"/></svg>';
+      return 'url("data:image/svg+xml,'+encodeURIComponent(svg)+'")';
+    }
+    var rimSeq = 0;
+    function rimSVG(w, h, d){
+      var id = 'lrim'+(++rimSeq);
+      return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0.18" y2="1">'+
+        '<stop offset="0" stop-color="#fff" stop-opacity=".58"/><stop offset="0.14" stop-color="#fff" stop-opacity=".3"/>'+
+        '<stop offset="0.46" stop-color="#fff" stop-opacity=".13"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient></defs>'+
+        '<path d="'+d+'" fill="none" stroke="url(#'+id+')" stroke-width="1.3"/></svg>';
+    }
+    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function (c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+    function relDate(ts){
+      if (!ts) return '';
+      var d = Math.floor((Date.now() - ts) / 86400000);
+      if (d <= 0) return 'Today'; if (d === 1) return 'Yesterday'; if (d < 7) return d + ' days ago';
+      if (d < 30) return Math.floor(d/7) + 'w ago'; return Math.floor(d/30) + 'mo ago';
+    }
+    function makeFolder(cfg){
+      var w = cfg.w, h = cfg.h, r = cfg.r || 20, tabW = cfg.tabW || Math.round(w * 0.44),
+          d = folderPath(w, h, r, tabW), m = maskFor(w, h, d);
+      var el = document.createElement('button');
+      el.type = 'button'; el.className = 'lux-fldr';
+      if (cfg.label) el.setAttribute('aria-label', cfg.label);
+      el.style.cssText = 'left:'+cfg.x+'px;top:'+cfg.y+'px;width:'+w+'px;height:'+h+'px;--rot:'+(cfg.rot||0)+'deg;z-index:'+(cfg.z||1)+';--in:'+(cfg.delay||0)+'ms;--m:'+m;
+      var media = cfg.thumb
+        ? '<img src="'+esc(cfg.thumb)+'" alt="">'
+        : '<div class="ph '+(cfg.ph||'ph-a')+'"></div>';
+      el.innerHTML =
+        '<div class="lay mask l-shadow"></div>'+
+        '<div class="lay mask l-contact"></div>'+
+        '<div class="lay mask l-glass"></div>'+
+        '<div class="lay mask l-face"></div>'+
+        '<div class="lay mask l-media">'+media+'</div>'+
+        '<div class="lay l-rim">'+rimSVG(w, h, d)+'</div>'+
+        '<div class="body"><span class="fn">'+esc(cfg.name)+'</span><span class="fd">'+esc(cfg.date)+'</span></div>';
+      if (cfg.onTap) el.addEventListener('click', cfg.onTap);
+      return el;
+    }
+
+    /* artful 3-slot cluster (from the reference), tuned for the 236-wide column */
+    var SLOTS = [
+      { x:2,   y:28,  w:236, h:200, rot:-7, z:2, tabW:104, delay:120, ph:'ph-b' },
+      { x:150, y:74,  w:196, h:236, rot:7,  z:1, tabW:86,  delay:240, ph:'ph-a' },
+      { x:14,  y:214, w:238, h:170, rot:-3, z:3, tabW:150, delay:380, ph:'ph-c' }
+    ];
+
+    function openRecent(id){ location.href = '/tools/pdf-studio.html?recent=' + encodeURIComponent(id); }
+
+    function renderCluster(items){
+      var host = document.getElementById('luxCluster'); if (!host) return;
+      host.innerHTML = '';
+      if (!items || !items.length){
+        host.style.height = 'auto';
+        var e = document.createElement('div'); e.className = 'lux-empty';
+        e.innerHTML = '<div style="font-size:30px">📄</div><h4>Start reading</h4><p>Open a PDF or scan a document — it\'ll appear here to pick up where you left off.</p><a href="/tools/pdf-studio.html?open=1">Open a document</a>';
+        host.appendChild(e);
+        return;
+      }
+      host.style.height = '300px';
+      items.slice(0, 3).forEach(function (it, i){
+        var s = SLOTS[i];
+        host.appendChild(makeFolder({
+          x:s.x, y:s.y, w:s.w, h:s.h, rot:s.rot, z:s.z, tabW:s.tabW, delay:s.delay, ph:s.ph,
+          thumb: it.thumb || null, name: it.name || 'Document.pdf', date: relDate(it.ts),
+          label: 'Open ' + (it.name || 'document'), onTap: function (){ openRecent(it.id); }
+        }));
+      });
+    }
+
+    /* load real recent documents (IndexedDB) — retry briefly since SJRecents boots async */
+    (function loadRecents(tries){
+      try {
+        if (window.SJRecents && window.SJRecents.list){
+          window.SJRecents.list().then(function (items){ renderCluster(items || []); }).catch(function (){ renderCluster([]); });
+          return;
+        }
+      } catch (e) {}
+      if ((tries||0) < 20) setTimeout(function (){ loadRecents((tries||0)+1); }, 150);
+      else renderCluster([]);
+    })(0);
   })();
 </script>
