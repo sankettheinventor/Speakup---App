@@ -601,6 +601,7 @@ const faqItems = [
 
     /* reading-view chooser (Book / Scroll / Grid) */
     .pr-view-sheet{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-end;justify-content:center;background:rgba(8,6,16,.5);animation:pr-menu-in .2s ease both}
+    .pr-view-sheet[hidden]{display:none}   /* the class sets display:flex, which beats the UA [hidden] rule — restore it explicitly */
     .pr-view-card{width:100%;max-width:460px;background:var(--sheet-card,var(--surface));border:1px solid var(--sheet-line,var(--line));border-bottom:0;border-radius:26px 26px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--sheet-shadow,0 -16px 50px -12px rgba(0,0,0,.45));animation:app-rise .28s cubic-bezier(.22,1,.36,1) both}
     .pr-view-grab{width:40px;height:4px;border-radius:4px;background:var(--sheet-grab,rgba(140,130,160,.4));margin:0 auto 14px}
     .pr-view-h{margin:2px 0 4px;font-size:16.5px;font-weight:800;text-align:center;color:var(--txt)}
