@@ -590,8 +590,10 @@ const faqItems = [
     .pr-doc.night .pr-canvas{filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.95)}
 
     /* ===== BOOK MODE — realistic page-flip (StPageFlip) ===== */
+    /* The page floats as a shorter card (like a real book on a table): generous bottom gap so the
+       bottom corner is easy to grab and the curl has room to sweep. */
     .pr-flip{height:calc(100vh - 58px - 60px);display:flex;align-items:center;justify-content:center;background:#e9e7f1;overflow:hidden;
-      padding:16px 20px;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:contain}
+      padding:14px 24px 72px;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:contain}
     .pr-flip[hidden]{display:none}
     :root[data-theme="dark"] .pr-flip{background:#13111b}
     body.is-app .pr-flip{height:calc(100vh - 58px - 62px - env(safe-area-inset-bottom) - env(safe-area-inset-top))}
@@ -1343,7 +1345,7 @@ const faqItems = [
         destroyFlipBook();
         var first = await doc.getPage(1);
         var vp1 = first.getViewport({ scale: 1 }), ar = vp1.width / vp1.height;
-        var availH = (host.clientHeight || window.innerHeight) - 28, availW = (host.clientWidth || window.innerWidth) - 20;
+        var availH = (host.clientHeight || window.innerHeight) - 6, availW = (host.clientWidth || window.innerWidth) - 6;   // padding on .pr-flip already sets the float margins
         flipH = availH; flipW = flipH * ar; if (flipW > availW){ flipW = availW; flipH = flipW / ar; }
         flipW = Math.round(flipW); flipH = Math.round(flipH);
         var wrap = document.createElement('div'); wrap.id = 'prFlipBook';
