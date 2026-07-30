@@ -60,6 +60,8 @@ const faqItems = [
     <!-- READER (immersive: full-bleed page, right rail + bottom bar, auto-hiding) -->
     <div class="pr-main" id="prMain" hidden>
       <div class="pr-doc" id="prDoc"></div>
+      <!-- Book mode: realistic page-flip book (StPageFlip). Hidden unless readMode==='book'. -->
+      <div class="pr-flip" id="prFlip" hidden></div>
 
       <!-- right floating quick-action rail -->
       <div class="pr-rail" id="prRail">
@@ -587,6 +589,17 @@ const faqItems = [
     .pr-doc.night .pr-page{background:#15151c}
     .pr-doc.night .pr-canvas{filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.95)}
 
+    /* ===== BOOK MODE — realistic page-flip (StPageFlip) ===== */
+    .pr-flip{height:calc(100vh - 58px - 60px);display:flex;align-items:center;justify-content:center;background:#e9e7f1;overflow:hidden;padding:14px 10px;-webkit-user-select:none;user-select:none}
+    .pr-flip[hidden]{display:none}
+    :root[data-theme="dark"] .pr-flip{background:#13111b}
+    body.is-app .pr-flip{height:calc(100vh - 58px - 62px - env(safe-area-inset-bottom) - env(safe-area-inset-top))}
+    body.is-app.ads-on .pr-flip{height:calc(100vh - 58px - 62px - env(safe-area-inset-bottom) - var(--ad-zone))}
+    .pr-flip .stf__parent{margin:0 auto;filter:drop-shadow(0 22px 46px rgba(20,16,44,.4))}
+    .pf-page{background:#fff;overflow:hidden;border-radius:3px}
+    .pf-page canvas.pf-canvas{display:block;width:100%;height:100%}
+    .pf-page .pf-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b9b3c9;font-size:13px}
+
     /* ===== BOOK MODE — one page per screen, swipe to turn (native scroll-snap) =====
        Same page elements as scroll mode, just laid horizontally: swipe flips pages,
        tap-to-read / text selection / highlights all keep working. --bpw (page width,
@@ -956,6 +969,8 @@ const faqItems = [
     import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
     import html2canvas from 'html2canvas';
     import jsQR from 'jsqr';
+    import { PageFlip } from 'page-flip/dist/js/page-flip.module.js';   // realistic corner-curl page turn for Book mode
+    import 'page-flip/src/Style/stPageFlip.css';
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
     (function () {
@@ -1020,11 +1035,12 @@ const faqItems = [
         $('prOpen').hidden = true; $('prSeo').style.display = 'none';
         var faq = document.querySelector('.faq'); if (faq) faq.style.display = 'none';
         $('prEdit').hidden = true; $('prFilter').hidden = true; $('prWrite').hidden = true; $('prMain').hidden = false;
-        // apply the remembered reading view (book vs scroll) BEFORE layout so page scale is right
-        try { $('prDoc').classList.toggle('book', readMode === 'book'); } catch (e) {}
-        // wait for the viewer to actually lay out, else clientWidth is 0 → blank pages
+        // show the right container BEFORE measuring, so clientWidth/Height are real (never 0 → blank)
+        if (readMode === 'book'){ var _pd = $('prDoc'); if (_pd) _pd.style.display = 'none'; var _pf = $('prFlip'); if (_pf) _pf.hidden = false; }
+        else { destroyFlipBook(); var _pf2 = $('prFlip'); if (_pf2) _pf2.hidden = true; var _pd2 = $('prDoc'); if (_pd2) _pd2.style.display = ''; }
         await new Promise(function (r){ requestAnimationFrame(function (){ requestAnimationFrame(r); }); });
-        await layout(false);
+        if (readMode === 'book') await buildFlipBook(1);
+        else await layout(false);
         status('');   // clear "Opening…" — the page is rendered now
         // first time a document is ever opened, let the reader pick their view
         try { if (!localStorage.getItem('sj_readmode_chosen')) setTimeout(function (){ if (doc) openViewSheet(); }, 900); } catch (e) {}
@@ -1237,7 +1253,7 @@ const faqItems = [
       }
 
       function relayout(){ var keep = curPage; layout(true).then(function (){ curPage = keep; }); }
-      function zoom(f){ fitMode = false; scale = Math.min(Math.max(scale * f, baseScale * 0.5), baseScale * 4); relayout(); }
+      function zoom(f){ if (readMode === 'book') return; fitMode = false; scale = Math.min(Math.max(scale * f, baseScale * 0.5), baseScale * 4); relayout(); }
 
       async function buildIndex(){
         if (indexBuilt || !doc) return;
@@ -1274,7 +1290,7 @@ const faqItems = [
         matchIdx = (i + matches.length) % matches.length;
         var n = matches[matchIdx];
         $('prMatch').textContent = (matchIdx + 1) + ' / ' + matches.length + ' pages';
-        var el = pageEls[n - 1]; if (el){ goToPageEl(el); renderPage(n).then(function (){ var tl = el.querySelector('.textLayer'); if (tl) highlight(tl); }); }
+        goToPage(n); var el = pageEls[n - 1]; if (el){ renderPage(n).then(function (){ var tl = el.querySelector('.textLayer'); if (tl) highlight(tl); }); }
       }
       function highlight(tl){ if (!query) return; tl.querySelectorAll('span').forEach(function (s){ if ((s.textContent || '').toLowerCase().indexOf(query) >= 0) s.classList.add('pr-hit'); }); }
       function clearHighlights(){ document.querySelectorAll('.textLayer span.pr-hit').forEach(function (s){ s.classList.remove('pr-hit'); }); }
@@ -1282,15 +1298,80 @@ const faqItems = [
       var modes = ['', 'sepia', 'night'], modeI = 0;
       function cycleMode(){ modeI = (modeI + 1) % modes.length; var d = $('prDoc'); d.classList.remove('sepia', 'night'); if (modes[modeI]) d.classList.add(modes[modeI]); }
 
-      /* ===== READING VIEW: Book / Scroll (+ Grid overlay) ===== */
-      // Bring a page element into view the right way for the current layout (horizontal vs vertical).
-      function goToPageEl(el){ if (!el) return; try { el.scrollIntoView(readMode === 'book' ? { inline: 'center', block: 'nearest' } : { block: 'start' }); } catch (e) { try { el.scrollIntoView(); } catch (_) {} } }
-      function goToPage(n){ var el = pageEls[n - 1]; if (el){ goToPageEl(el); curPage = n; updateInd(); } }
+      /* ===== READING VIEW: Book (real page-flip) / Scroll (+ Grid overlay) ===== */
+      var flipBook = null, flipEls = [], flipRendered = {}, flipW = 0, flipH = 0;
+
+      /* go to page N in whichever layout is active */
+      function goToPage(n){
+        n = Math.min(Math.max(n, 1), doc ? doc.numPages : 1);
+        if (readMode === 'book' && flipBook){ try { flipBook.turnToPage(n - 1); } catch (e) {} curPage = n; updateInd(); return; }
+        var el = pageEls[n - 1]; if (el){ try { el.scrollIntoView({ block: 'start' }); } catch (e) {} curPage = n; updateInd(); }
+      }
+      function goToPageEl(el){ if (!el) return; try { el.scrollIntoView({ block: 'start' }); } catch (e) {} }
+
+      /* render one PDF page into its flip-book leaf (lazy — only near the current page) */
+      async function renderFlipPage(n){
+        if (!doc || flipRendered[n] || !flipEls[n - 1]) return;
+        flipRendered[n] = true;
+        try {
+          var page = await doc.getPage(n);
+          var vp1 = page.getViewport({ scale: 1 });
+          var dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+          var scale = Math.min(flipW / vp1.width, flipH / vp1.height);
+          var v = page.getViewport({ scale: scale });
+          var fit = window.SnapJarKit ? window.SnapJarKit.fitDims(v.width * dpr, v.height * dpr) : { clamped: false };
+          var out = dpr * (fit.clamped ? fit.scale : 1);
+          var c = document.createElement('canvas'); c.className = 'pf-canvas';
+          c.width = Math.round(v.width * out); c.height = Math.round(v.height * out);
+          await page.render({ canvasContext: c.getContext('2d'), viewport: v, transform: out !== 1 ? [out, 0, 0, out, 0, 0] : null }).promise;
+          var el = flipEls[n - 1]; if (el){ el.innerHTML = ''; el.appendChild(c); }
+        } catch (e) { flipRendered[n] = false; }
+      }
+      function renderFlipNear(p){ if (!doc) return Promise.resolve(); var list = [p, p + 1, p - 1, p + 2, p + 3].filter(function (n){ return n >= 1 && n <= doc.numPages; }); return Promise.all(list.map(renderFlipPage)); }
+
+      async function buildFlipBook(startPage){
+        var host = $('prFlip'); if (!host || !doc) return;
+        destroyFlipBook();
+        var first = await doc.getPage(1);
+        var vp1 = first.getViewport({ scale: 1 }), ar = vp1.width / vp1.height;
+        var availH = (host.clientHeight || window.innerHeight) - 28, availW = (host.clientWidth || window.innerWidth) - 20;
+        flipH = availH; flipW = flipH * ar; if (flipW > availW){ flipW = availW; flipH = flipW / ar; }
+        flipW = Math.round(flipW); flipH = Math.round(flipH);
+        var wrap = document.createElement('div'); wrap.id = 'prFlipBook';
+        host.innerHTML = ''; host.appendChild(wrap); flipEls = []; flipRendered = {};
+        for (var n = 1; n <= doc.numPages; n++){
+          var pg = document.createElement('div'); pg.className = 'pf-page'; pg.dataset.n = String(n);
+          pg.innerHTML = '<div class="pf-load">…</div>';
+          wrap.appendChild(pg); flipEls.push(pg);
+        }
+        try {
+          flipBook = new PageFlip(wrap, {
+            width: flipW, height: flipH, size: 'fixed',
+            minWidth: 180, maxWidth: 2200, minHeight: 200, maxHeight: 2800,
+            drawShadow: true, flippingTime: 720, maxShadowOpacity: 0.5,
+            showCover: false, usePortrait: true, mobileScrollSupport: false,
+            showPageCorners: true, swipeDistance: 18, useMouseEvents: true, clickEventForward: false
+          });
+          flipBook.loadFromHTML(wrap.querySelectorAll('.pf-page'));
+          flipBook.on('flip', function (e){ var p = (e.data | 0) + 1; if (p !== curPage){ curPage = p; updateInd(); try { saveProgress(); } catch (er) {} } renderFlipNear(p); });
+        } catch (e) { flipBook = null; }
+        var sp = Math.min(Math.max(startPage || 1, 1), doc.numPages);
+        await renderFlipNear(sp);
+        if (flipBook && sp > 1){ try { flipBook.turnToPage(sp - 1); } catch (e) {} }
+        curPage = sp; updateInd();
+      }
+      function destroyFlipBook(){ try { if (flipBook && flipBook.destroy) flipBook.destroy(); } catch (e) {} flipBook = null; flipEls = []; flipRendered = {}; var h = $('prFlip'); if (h) h.innerHTML = ''; }
+
+      function showBook(startPage){ var d = $('prDoc'); if (d) d.style.display = 'none'; var f = $('prFlip'); if (f) f.hidden = false; return buildFlipBook(startPage || curPage || 1); }
+      function hideBook(){ destroyFlipBook(); var f = $('prFlip'); if (f) f.hidden = true; var d = $('prDoc'); if (d) d.style.display = ''; }
+
       function applyReadMode(mode){
         readMode = (mode === 'book') ? 'book' : 'scroll';
         try { localStorage.setItem('sj_readmode', readMode); localStorage.setItem('sj_readmode_chosen', '1'); } catch (e) {}
-        var d = $('prDoc'); if (d) d.classList.toggle('book', readMode === 'book');
-        if (doc){ var keep = curPage; layout(true).then(function (){ curPage = Math.min(Math.max(keep, 1), pageEls.length); var el = pageEls[curPage - 1]; if (el) goToPageEl(el); updateInd(); }); }
+        if (!doc) return;
+        var keep = curPage;
+        if (readMode === 'book'){ showBook(keep); }
+        else { hideBook(); layout(true).then(function (){ curPage = Math.min(Math.max(keep, 1), pageEls.length || 1); var el = pageEls[curPage - 1]; if (el){ try { el.scrollIntoView({ block: 'start' }); } catch (e) {} } updateInd(); }); }
       }
       function markViewSel(){ var s = $('prViewSheet'); if (!s) return; Array.prototype.forEach.call(s.querySelectorAll('.pr-view-opt'), function (b){ b.classList.toggle('on', b.dataset.view === readMode); }); }
       function openViewSheet(){ var s = $('prViewSheet'); if (!s) return; markViewSel(); s.hidden = false; if (window.SnapJarKit && window.SnapJarKit.adPause) window.SnapJarKit.adPause(); }
@@ -1645,7 +1726,7 @@ const faqItems = [
 
       $('prIn').onclick = function (){ if (doc) zoom(1.25); };
       $('prOut').onclick = function (){ if (doc) zoom(0.8); };
-      $('prFit').onclick = function (){ if (!doc) return; fitMode = true; relayout(); };
+      $('prFit').onclick = function (){ if (!doc || readMode === 'book') return; fitMode = true; relayout(); };
       $('prMode').onclick = function (){ if (doc) cycleMode(); };
       /* Split the open PDF into single-page PDFs → save each to My Files */
       async function doSplit(){
@@ -1722,7 +1803,7 @@ const faqItems = [
           var ph = document.createElement('span'); ph.className = 'pr-thumb-img'; ph.dataset.n = String(n);
           var lbl = document.createElement('span'); lbl.className = 'pr-thumb-n'; lbl.textContent = n;
           b.appendChild(ph); b.appendChild(lbl);
-          (function (nn){ b.onclick = function (){ if (pageEls[nn - 1]){ goToPageEl(pageEls[nn - 1]); curPage = nn; updateInd(); } close(); }; })(n);
+          (function (nn){ b.onclick = function (){ goToPage(nn); close(); }; })(n);
           grid.appendChild(b); tio.observe(ph);
         }
         document.body.appendChild(ov);
@@ -1777,7 +1858,7 @@ const faqItems = [
       var t; $('prQuery').addEventListener('input', function (){ clearTimeout(t); t = setTimeout(runSearch, 250); });
       $('prPrev').onclick = function (){ gotoMatch(matchIdx - 1); };
       $('prNext').onclick = function (){ gotoMatch(matchIdx + 1); };
-      var rt; window.addEventListener('resize', function (){ if (ED.on || !doc || !fitMode) return; clearTimeout(rt); rt = setTimeout(function (){ relayout(); }, 200); });
+      var rt; window.addEventListener('resize', function (){ if (ED.on || !doc) return; clearTimeout(rt); rt = setTimeout(function (){ if (readMode === 'book'){ if (!$('prFlip').hidden) buildFlipBook(curPage); } else if (fitMode) relayout(); }, 220); });
 
       /* ============================ EDITOR ============================ */
       /* Coordinates: every element stores x,y,w,h,size in PDF points (top-left, y-down).
@@ -2584,6 +2665,7 @@ const faqItems = [
           }
           var u = TTS.units[TTS.ui]; if (!u){ ttsFinish(); return; }
           ttsHighlight(u); curPage = TTS.page; updateInd();
+          if (readMode === 'book' && flipBook && flipBook.getCurrentPageIndex && flipBook.getCurrentPageIndex() !== TTS.page - 1){ try { flipBook.turnToPage(TTS.page - 1); renderFlipNear(TTS.page); } catch (e) {} }   // follow the reading in book view
           await ttsSpeakText(u.text);
           if (token !== TTS.seq || !TTS.active || !TTS.playing) return;
           TTS.ui++;
@@ -3026,7 +3108,7 @@ const faqItems = [
             var d = document.createElement('div'); d.className = 'nt-item';
             d.innerHTML = '<div class="nt-item-top"><button class="nt-item-pg" type="button">Page ' + (it.page || 1) + '</button><button class="nt-item-del" type="button" aria-label="Delete note">🗑️</button></div><div class="nt-item-tx"></div>';
             d.querySelector('.nt-item-tx').textContent = it.text;
-            d.querySelector('.nt-item-pg').onclick = function (){ var el = pageEls[(it.page || 1) - 1]; if (el){ goToPageEl(el); curPage = it.page || 1; updateInd(); } $('prNotesSheet').hidden = true; };
+            d.querySelector('.nt-item-pg').onclick = function (){ goToPage(it.page || 1); $('prNotesSheet').hidden = true; };
             /* destructive + unrecoverable → confirm first (same pattern as My Files delete) */
             d.querySelector('.nt-item-del').onclick = function (){
               var K = window.SnapJarKit;
@@ -3170,7 +3252,7 @@ const faqItems = [
             d.querySelector('.hlq mark').textContent = it.text;
             d.querySelector('.hl-dot').style.background = HL_HEX[it.color] || HL_HEX.y;
             d.querySelector('.hl-nm').textContent = it.name;
-            d.onclick = function (){ var el = pageEls[(it.page || 1) - 1]; if (el){ goToPageEl(el); curPage = it.page || 1; if (typeof updateInd === 'function') updateInd(); } $('prHlSheet').hidden = true; };
+            d.onclick = function (){ goToPage(it.page || 1); $('prHlSheet').hidden = true; };
             d.querySelector('.hl-item-more').onclick = function (e){ e.stopPropagation(); openMenu(it); };
             list.appendChild(d);
           });
@@ -3287,14 +3369,14 @@ const faqItems = [
           var hlp = parseInt(qs.get('hlpage') || '0', 10) || 0;   // jump to a highlight's page
           window.SJRecents.get(rid).then(function (rec){ if (rec && rec.blob) return openFile(rec.blob, rec.name || 'Document.pdf', { skipRecentAdd: true, recentId: rid }); status('That file is no longer available.'); })
             .then(function (){
-              if (hlp > 1) setTimeout(function (){ try { var el = pageEls[hlp - 1]; if (el){ goToPageEl(el); curPage = hlp; if (typeof updateInd === 'function') updateInd(); } } catch (e) {} }, 700);
+              if (hlp > 1) setTimeout(function (){ try { goToPage(hlp); } catch (e) {} }, 700);
               /* ?listen=1 — arrived from the "your book is waiting" reminder. Resume at the saved
                  page and START PLAYING, because that's exactly what the notification promised. */
               if (qs.get('listen') === '1') setTimeout(function (){
                 try {
                   var saved = (JSON.parse(localStorage.getItem('sj_reading') || '[]') || []).filter(function (x){ return x && x.docId === rid; })[0];
                   var pg = saved && saved.page > 1 ? saved.page : 0;
-                  if (pg){ var el = pageEls[pg - 1]; if (el){ goToPageEl(el); curPage = pg; updateInd(); } }
+                  if (pg){ goToPage(pg); }
                   setTimeout(function (){ try { ttsStart(); } catch (e) {} }, 400);
                 } catch (e) {}
               }, 800);

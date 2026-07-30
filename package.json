@@ -36,6 +36,7 @@
     "jsqr": "^1.4.0",
     "jszip": "3.10.1",
     "mammoth": "^1.12.0",
+    "page-flip": "^2.0.7",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "3.11.174",
     "pptx-preview": "^1.0.7",
