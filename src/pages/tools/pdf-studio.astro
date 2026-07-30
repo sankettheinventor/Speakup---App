@@ -590,15 +590,21 @@ const faqItems = [
     .pr-doc.night .pr-canvas{filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.95)}
 
     /* ===== BOOK MODE — realistic page-flip (StPageFlip) ===== */
-    .pr-flip{height:calc(100vh - 58px - 60px);display:flex;align-items:center;justify-content:center;background:#e9e7f1;overflow:hidden;padding:14px 10px;-webkit-user-select:none;user-select:none}
+    .pr-flip{height:calc(100vh - 58px - 60px);display:flex;align-items:center;justify-content:center;background:#e9e7f1;overflow:hidden;
+      padding:16px 20px;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:contain}
     .pr-flip[hidden]{display:none}
     :root[data-theme="dark"] .pr-flip{background:#13111b}
     body.is-app .pr-flip{height:calc(100vh - 58px - 62px - env(safe-area-inset-bottom) - env(safe-area-inset-top))}
     body.is-app.ads-on .pr-flip{height:calc(100vh - 58px - 62px - env(safe-area-inset-bottom) - var(--ad-zone))}
-    .pr-flip .stf__parent{margin:0 auto;filter:drop-shadow(0 22px 46px rgba(20,16,44,.4))}
+    /* full gesture control → the diagonal corner-peel isn't stolen by the browser's pan-y scroll */
+    .pr-flip .stf__parent{margin:0 auto;filter:drop-shadow(0 22px 46px rgba(20,16,44,.4));touch-action:none !important}
     .pf-page{background:#fff;overflow:hidden;border-radius:3px}
     .pf-page canvas.pf-canvas{display:block;width:100%;height:100%}
     .pf-page .pf-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b9b3c9;font-size:13px}
+    /* Book view: hide the rail + bottom bar so the page corners are free to grab; tap to reveal (3.2s) */
+    .pr-main.book-on .pr-rbar,.pr-main.book-on .pr-rail{transition:opacity .3s var(--ease-out),transform .3s var(--ease-out)}
+    .pr-main.book-on:not(.chrome) .pr-rbar,.pr-main.book-on:not(.chrome) .pr-rail{opacity:0;pointer-events:none;transform:translateY(6px)}
+    .pr-main.book-on:not(.chrome) .pr-rail{transform:translateY(-50%) translateX(10px)}
 
     /* ===== BOOK MODE — one page per screen, swipe to turn (native scroll-snap) =====
        Same page elements as scroll mode, just laid horizontally: swipe flips pages,
@@ -1036,8 +1042,9 @@ const faqItems = [
         var faq = document.querySelector('.faq'); if (faq) faq.style.display = 'none';
         $('prEdit').hidden = true; $('prFilter').hidden = true; $('prWrite').hidden = true; $('prMain').hidden = false;
         // show the right container BEFORE measuring, so clientWidth/Height are real (never 0 → blank)
-        if (readMode === 'book'){ var _pd = $('prDoc'); if (_pd) _pd.style.display = 'none'; var _pf = $('prFlip'); if (_pf) _pf.hidden = false; }
-        else { destroyFlipBook(); var _pf2 = $('prFlip'); if (_pf2) _pf2.hidden = true; var _pd2 = $('prDoc'); if (_pd2) _pd2.style.display = ''; }
+        var _pm = $('prMain');
+        if (readMode === 'book'){ if (_pm){ _pm.classList.add('book-on'); _pm.classList.remove('chrome'); } var _pd = $('prDoc'); if (_pd) _pd.style.display = 'none'; var _pf = $('prFlip'); if (_pf) _pf.hidden = false; }
+        else { if (_pm) _pm.classList.remove('book-on', 'chrome'); destroyFlipBook(); var _pf2 = $('prFlip'); if (_pf2) _pf2.hidden = true; var _pd2 = $('prDoc'); if (_pd2) _pd2.style.display = ''; }
         await new Promise(function (r){ requestAnimationFrame(function (){ requestAnimationFrame(r); }); });
         if (readMode === 'book') await buildFlipBook(1);
         else await layout(false);
@@ -1316,7 +1323,9 @@ const faqItems = [
         try {
           var page = await doc.getPage(n);
           var vp1 = page.getViewport({ scale: 1 });
-          var dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+          // Cap DPR at 2 for book leaves — StPageFlip 3D-transforms these as textures every frame
+          // during the curl, so 3× canvases jank the flip. 2× stays crisp and smooth.
+          var dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2);
           var scale = Math.min(flipW / vp1.width, flipH / vp1.height);
           var v = page.getViewport({ scale: scale });
           var fit = window.SnapJarKit ? window.SnapJarKit.fitDims(v.width * dpr, v.height * dpr) : { clamped: false };
@@ -1348,12 +1357,15 @@ const faqItems = [
           flipBook = new PageFlip(wrap, {
             width: flipW, height: flipH, size: 'fixed',
             minWidth: 180, maxWidth: 2200, minHeight: 200, maxHeight: 2800,
-            drawShadow: true, flippingTime: 720, maxShadowOpacity: 0.5,
+            drawShadow: true, flippingTime: 650, maxShadowOpacity: 0.55,
             showCover: false, usePortrait: true, mobileScrollSupport: false,
-            showPageCorners: true, swipeDistance: 18, useMouseEvents: true, clickEventForward: false
+            showPageCorners: true, swipeDistance: 12, useMouseEvents: true,
+            clickEventForward: false, disableFlipByClick: true   // drag the corner to turn (like a real book); tap toggles the chrome
           });
           flipBook.loadFromHTML(wrap.querySelectorAll('.pf-page'));
           flipBook.on('flip', function (e){ var p = (e.data | 0) + 1; if (p !== curPage){ curPage = p; updateInd(); try { saveProgress(); } catch (er) {} } renderFlipNear(p); });
+          // tap the page (not a drag) → toggle the reader chrome so corners stay clear
+          try { host.addEventListener('click', function (ev){ if (ev.target.closest && ev.target.closest('.pr-rbar, .pr-rail')) return; toggleChrome(); }); } catch (e) {}
         } catch (e) { flipBook = null; }
         var sp = Math.min(Math.max(startPage || 1, 1), doc.numPages);
         await renderFlipNear(sp);
@@ -1362,8 +1374,13 @@ const faqItems = [
       }
       function destroyFlipBook(){ try { if (flipBook && flipBook.destroy) flipBook.destroy(); } catch (e) {} flipBook = null; flipEls = []; flipRendered = {}; var h = $('prFlip'); if (h) h.innerHTML = ''; }
 
-      function showBook(startPage){ var d = $('prDoc'); if (d) d.style.display = 'none'; var f = $('prFlip'); if (f) f.hidden = false; return buildFlipBook(startPage || curPage || 1); }
-      function hideBook(){ destroyFlipBook(); var f = $('prFlip'); if (f) f.hidden = true; var d = $('prDoc'); if (d) d.style.display = ''; }
+      /* In book view the rail + bottom bar are auto-hidden so nothing sits over the page corners
+         (the corner is what you grab to turn). Tap the page to reveal them for a few seconds. */
+      var chromeT;
+      function showChrome(){ var pm = $('prMain'); if (pm) pm.classList.add('chrome'); clearTimeout(chromeT); chromeT = setTimeout(function (){ if (readMode === 'book'){ var p = $('prMain'); if (p) p.classList.remove('chrome'); } }, 3200); }
+      function toggleChrome(){ var pm = $('prMain'); if (!pm) return; if (pm.classList.contains('chrome')) { pm.classList.remove('chrome'); clearTimeout(chromeT); } else showChrome(); }
+      function showBook(startPage){ var pm = $('prMain'); if (pm){ pm.classList.add('book-on'); pm.classList.remove('chrome'); } var d = $('prDoc'); if (d) d.style.display = 'none'; var f = $('prFlip'); if (f) f.hidden = false; return buildFlipBook(startPage || curPage || 1); }
+      function hideBook(){ destroyFlipBook(); var pm = $('prMain'); if (pm) pm.classList.remove('book-on', 'chrome'); clearTimeout(chromeT); var f = $('prFlip'); if (f) f.hidden = true; var d = $('prDoc'); if (d) d.style.display = ''; }
 
       function applyReadMode(mode){
         readMode = (mode === 'book') ? 'book' : 'scroll';
