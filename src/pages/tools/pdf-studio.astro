@@ -607,6 +607,14 @@ const faqItems = [
     .pr-main.book-on .pr-rbar,.pr-main.book-on .pr-rail{transition:opacity .3s var(--ease-out),transform .3s var(--ease-out)}
     .pr-main.book-on:not(.chrome) .pr-rbar,.pr-main.book-on:not(.chrome) .pr-rail{opacity:0;pointer-events:none;transform:translateY(6px)}
     .pr-main.book-on:not(.chrome) .pr-rail{transform:translateY(-50%) translateX(10px)}
+    .pr-main.book-on .pr-rb-zoom{display:none}   /* zoom doesn't apply to the fit-to-screen book page */
+    /* reading themes (Day/Sepia/Night) + brightness on the flip pages, same as scroll view */
+    .pr-flip.sepia{background:#c9c2a8}
+    .pr-flip.night{background:#0b0b10}
+    .pr-flip .pf-page{filter:brightness(var(--pr-bright,1))}
+    .pr-flip.sepia .pf-canvas{filter:sepia(.18) saturate(.92) brightness(.98)}
+    .pr-flip.night .pf-page{background:#15151c}
+    .pr-flip.night .pf-canvas{filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.95)}
 
     /* ===== BOOK MODE — one page per screen, swipe to turn (native scroll-snap) =====
        Same page elements as scroll mode, just laid horizontally: swipe flips pages,
@@ -1305,7 +1313,7 @@ const faqItems = [
       function clearHighlights(){ document.querySelectorAll('.textLayer span.pr-hit').forEach(function (s){ s.classList.remove('pr-hit'); }); }
 
       var modes = ['', 'sepia', 'night'], modeI = 0;
-      function cycleMode(){ modeI = (modeI + 1) % modes.length; var d = $('prDoc'); d.classList.remove('sepia', 'night'); if (modes[modeI]) d.classList.add(modes[modeI]); }
+      function cycleMode(){ modeI = (modeI + 1) % modes.length; [$('prDoc'), $('prFlip')].forEach(function (d){ if (!d) return; d.classList.remove('sepia', 'night'); if (modes[modeI]) d.classList.add(modes[modeI]); }); }
 
       /* ===== READING VIEW: Book (real page-flip) / Scroll (+ Grid overlay) ===== */
       var flipBook = null, flipEls = [], flipRendered = {}, flipW = 0, flipH = 0;
@@ -1350,6 +1358,8 @@ const faqItems = [
         flipW = Math.round(flipW); flipH = Math.round(flipH);
         var wrap = document.createElement('div'); wrap.id = 'prFlipBook';
         host.innerHTML = ''; host.appendChild(wrap); flipEls = []; flipRendered = {};
+        // inherit the reader's current theme (Day/Sepia/Night) + brightness
+        try { var _th = localStorage.getItem('sj_pr_theme'); if (_th == null) _th = modes[modeI] || ''; host.classList.remove('sepia', 'night'); if (_th === 'sepia' || _th === 'night') host.classList.add(_th); var _br = localStorage.getItem('sj_pr_bright'); host.style.setProperty('--pr-bright', _br || '1'); } catch (e) {}
         for (var n = 1; n <= doc.numPages; n++){
           var pg = document.createElement('div'); pg.className = 'pf-page'; pg.dataset.n = String(n);
           pg.innerHTML = '<div class="pf-load">…</div>';
@@ -3101,8 +3111,8 @@ const faqItems = [
         var bright = 1;
         try { var sb = localStorage.getItem('sj_pr_bright'); if (sb) bright = +sb || 1; } catch (e) {}
         try { var sm = localStorage.getItem('sj_pr_theme'); if (sm !== null && sm !== undefined){ var mi = modes.indexOf(sm); if (mi >= 0) modeI = mi; } } catch (e) {}
-        function applyTheme(){ var d = $('prDoc'); d.classList.remove('sepia', 'night'); if (modes[modeI]) d.classList.add(modes[modeI]); $('cfTheme').querySelectorAll('button').forEach(function (b){ b.classList.toggle('on', b.getAttribute('data-m') === modes[modeI]); }); }
-        function applyBright(){ $('prDoc').style.setProperty('--pr-bright', bright); var s = $('cfBright'); if (s) s.value = Math.round(bright * 100); var l = $('cfBrightVal'); if (l) l.textContent = Math.round(bright * 100) + '%'; }
+        function applyTheme(){ [$('prDoc'), $('prFlip')].forEach(function (d){ if (!d) return; d.classList.remove('sepia', 'night'); if (modes[modeI]) d.classList.add(modes[modeI]); }); $('cfTheme').querySelectorAll('button').forEach(function (b){ b.classList.toggle('on', b.getAttribute('data-m') === modes[modeI]); }); }
+        function applyBright(){ [$('prDoc'), $('prFlip')].forEach(function (d){ if (d) d.style.setProperty('--pr-bright', bright); }); var s = $('cfBright'); if (s) s.value = Math.round(bright * 100); var l = $('cfBrightVal'); if (l) l.textContent = Math.round(bright * 100) + '%'; }
         $('prMode').onclick = function (){ if (!doc) return; applyTheme(); applyBright(); $('prComfort').hidden = false; };
         $('cfTheme').querySelectorAll('button').forEach(function (b){ b.onclick = function (){ var mi = modes.indexOf(b.getAttribute('data-m')); modeI = mi >= 0 ? mi : 0; try { localStorage.setItem('sj_pr_theme', modes[modeI]); } catch (e) {} applyTheme(); }; });
         $('cfBright').oninput = function (){ bright = Math.max(0.5, Math.min(1.6, (+$('cfBright').value || 100) / 100)); try { localStorage.setItem('sj_pr_bright', String(bright)); } catch (e) {} applyBright(); };
