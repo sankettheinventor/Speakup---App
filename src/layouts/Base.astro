@@ -884,6 +884,13 @@ const APP_LINK_FIX = `(function(){document.addEventListener('click',function(e){
   <slot name="head" />
 </head>
 <body class:list={[IS_APP && 'is-app', IS_APP && isHome && 'lux-home']}>
+{IS_APP && (
+  <div class="lux-appbg" aria-hidden="true">
+    <div class="lux-grad"></div>
+    <div class="lux-fluid"><b class="g1"></b><b class="g2"></b><b class="g3"></b><b class="g4"></b></div>
+    <div class="lux-glow"></div>
+  </div>
+)}
   <div class="promise">
     <span class="pi">Free</span>
     <span class="pi">No signup</span>
